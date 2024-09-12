@@ -7,8 +7,10 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+#include <time.h>
 
 #include "shm.h"
+#include <bits/time.h>
 
 
 /**
@@ -110,9 +112,63 @@ void *exec_table_by_thread(void * r_ta)
     int occuper = -1;
     int v = -1;
     int close = -1;
-    while (((sem_getvalue(&t->fin_table,&t_s) == 0) && (t_s != 1)) 
+    //int goon = 1;
+    while (((sem_getvalue(&t->fin_table,&t_s) == 0) && (t_s != 1))
         && (close != 1)) {
 
+        /*clock_gettime(CLOCK_REALTIME,&clock);
+        if (time_open >= 1000) {
+            clock.tv_sec+= time_open/1000;
+            clock.tv_nsec+= (time_open % 1000)*1000000;
+        }
+        else {
+            clock.tv_nsec+= (time_open * 1000000);
+        }
+       
+        sem_timedwait(&t->fin_table,&clock);
+        if(occuper > 0) {
+            //sem_getvalue(&t->sem_ta,&v);
+            sem_timedwait(&t->fin_table,&clock);
+            //sleep(1);
+            printf("begin sleep \n");
+            //clock_nanosleep(CLOCK_MONOTONIC, 0, &clock, NULL);
+            printf("after sleep \n");
+            memset(t->convive,'\0',80);
+            sem_post(&t->sem_ta);
+            //sem_post(&t->fin_table);
+            sem_getvalue(&t->sem_ta,&v);
+
+            //sem_post(&t->fin_table);
+            //printf("v : %d\n",v);
+        }
+        
+        int S_fin_var = -1;
+        int sem_fin = sem_getvalue(&re_ta->r->S_fin,&S_fin_var);
+        int fermeture = -1;
+        if((sem_fin == 0) && (S_fin_var == 1))
+            fermeture = 1;
+        
+        occuper =  table_occuper(t);
+    
+        int conv_in_t = -1;
+        sem_getvalue(&t->sem_time,&conv_in_t);
+        //printf("fermeture : %d \n",fermeture);
+        if(((occuper == 0) && (conv_in_t == 0)) && (fermeture == 1)) {
+            close = 1;
+        }
+        else {
+            if((occuper == 1) && (fermeture == 1)) {
+                printf("occuper \n");
+                print_table(t);
+                close = 1; // NORMALEMENT NON 
+            }
+            else {
+                if(occuper == 1)
+                    print_table(t);
+                if(fermeture == 1)
+                    close = 1;
+            }
+        }*/
         clock_gettime(CLOCK_REALTIME,&clock);
         if (time_open >= 1000) {
             clock.tv_sec+= time_open/1000;
@@ -180,6 +236,7 @@ int main(int argc,char *argv[])
         l_tables[t-2] = c_p;
         t++; 
     }
+    
     if (t != (argc)) {
         fprintf(stderr,
         "usage: Un des arguments est plus grand que la capacite max ou plus petit que 1\n");
@@ -197,7 +254,6 @@ int main(int argc,char *argv[])
         fprintf(stderr,"usage: Temps d'ouverture trop petit/grand \n");
         exit(EXIT_FAILURE);
     }
-
     struct restoo * r =  open_resto(nombr_table,l_tables);
     struct cahier_rapel * c = open_cahier(nombr_table);
 
@@ -227,6 +283,9 @@ int main(int argc,char *argv[])
     int nb_g = nb_groupe(c);
     if (nb_c == 0)
         nb_g = 0;
+
+    //print_resto(r);
+    //print_cahier(c);
     close_resto();
     close_cahier();
     printf("%d convives servis dans %d groupes\n",nb_c,nb_g);

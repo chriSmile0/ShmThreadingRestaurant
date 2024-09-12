@@ -205,14 +205,23 @@ int main(int argc,char *argv[])
             int index = creer_groupe(c);
         
             int index_g = concat_chaine_in_membres(c,resa_conv,index);
-            if (nb_place_resa == 1) 
-                sem_post(&r->tables[placer].fin_table);
+            if(nb_place_resa == 1) {
+                //sem_post(&r->tables[placer].fin_table);
+                sem_post(&r->tables[placer].sem_ta);
+                sem_wait(&r->tables[placer].fin_table);
+                r->nb_tables_occuper--;
+            }
             
-            sem_post(&r->tables[placer].sem_time);
+            //sem_post(&r->tables[placer].sem_time);
             c->groupes[index_g].nb_membres_gr = nb_place_resa;
-            sem_wait(&r->tables[placer].sem_ta);
-            sem_wait(&r->tables[placer].sem_time);
+            //sem_post(&r->tables[placer].sem_ta);
+            //TRAITEMENT 
+
+
+            // FIN ICI 
+            //sem_wait(&r->tables[placer].sem_time);
             r->nb_tables_occuper--;
+            
         }
     }
     else {

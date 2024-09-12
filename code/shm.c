@@ -333,7 +333,7 @@ int nb_conv_t(char convive[80])
     int i = 0;
     int j = 0;
     int nb_convive = 0;
-    while ( i < taille_convive) {
+    while (i < taille_convive) {
         if (isalpha(convive[i]) == 1024) {
             j = i;
             while ((convive[j] != ' ') && (j < taille_convive)) 
@@ -415,3 +415,50 @@ void close_cahier()
     shm_unlink(CAHIER_NAME);
 }
 
+//***************************** UPDATE 2024 **********************************//
+void print_table(struct table *t) {
+    printf("\n********** TABLE n°%d **********\n",t->num);
+    printf("Capacite de la table : %d\n",t->capacite);
+    printf("Convives prévus pour la table : %d\n",t->nb_convive_t);
+    int ta;
+    sem_getvalue(&t->sem_ta, &ta);
+    printf ("%s\n",(ta) ? "En Service": "Pas en Service");
+    int tim;
+    sem_getvalue(&t->sem_time, &tim);
+    printf ("%s\n",(tim) ? "Reservé": "Non Reservé");
+    int fin_ta;
+    sem_getvalue(&t->fin_table, &fin_ta);
+    printf ("%s\n", (ta) ? ((fin_ta) ? "Service terminé" : "Service en cours") : "");
+    printf("Convives : %s\n",t->convive);
+}
+
+
+void print_resto(struct restoo *r) {
+    printf("\n********** RESTO **********\n");
+    printf("Taille segment resto : %ld\n",r->taille);
+    printf("Nombre de tables occupées : %d\n",r->nb_tables_occuper);
+    int nb_table = r->nb_tables;
+    printf("Nombre totale de table du restaurant : %d\n",nb_table);
+    int sfin;
+    sem_getvalue(&r->S_fin, &sfin);
+    printf ("%s\n",(sfin) ? "Fini": "Pas fini");
+    for(int i = 0; i < nb_table; i++)
+        print_table(&r->tables[i]);
+   
+}
+
+void print_group(struct group *g) {
+    printf("\n********** GROUPE n°%d **********\n",g->num_gr);
+    printf("Nombre de membres du groupe : %d\n",g->nb_membres_gr);
+    printf("Membres du groupe : %s\n",g->membres_gr);
+}
+
+void print_cahier(struct cahier_rapel *c) {
+    printf("\n********** CAHIER **********\n");
+    printf("Taille segment cahier : %ld\n",c->taille);
+    int nb_groupe = c->nb_groupe;
+    printf("Nombre de groupe dans le cahier : %d\n",nb_groupe);
+    for(int i = 0 ; i < nb_groupe; i++) 
+        print_group(&c->groupes[i]);
+
+}

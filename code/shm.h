@@ -24,9 +24,7 @@ struct table {
     sem_t sem_ta;
     /** Semaphore pour signifier si quelqu'un a reserver cette table */
     sem_t sem_time;
-    /** Semaphore de protection pour la table , c'est a dire lorsque que l'on
-    premier convive associé post ce sémaphore on peut commencer le service pour
-    cette table */
+    /** Fin du service de la table*/
     sem_t fin_table;
     /** Liste de convive qui seront de taille capacite*/
     char convive[80];
@@ -35,7 +33,7 @@ struct table {
 struct group {
     //Num du groupe
     int num_gr;
-    //Nombre max de membres//
+    //Nombre de membres//
     int nb_membres_gr;
     char membres_gr[80];//Max 6 noms par groupes séparer par un espace
 };
@@ -322,6 +320,51 @@ void affichage_police(FILE * fd);
 */
 
 void close_resto(void);
+
+
+
+//***************************** UPDATE 2024 **********************************//
+/** 
+ * @brief 
+ *
+ * @param[:t] la table
+ * 
+ *
+ * @return 
+*/
+void print_table(struct table *t);
+
+
+
+/** 
+ * @brief 
+ *
+ * @param[:r] le resto
+ * 
+ *
+ * @return 
+*/
+void print_resto(struct restoo *r);
+
+/** 
+ * @brief 
+ *
+ * @param[:g] le groupe
+ * 
+ *
+ * @return 
+*/
+void print_group(struct group *g);
+
+/** 
+ * @brief 
+ *
+ * @param[:c] le cahier
+ * 
+ *
+ * @return 
+*/
+void print_cahier(struct cahier_rapel *c);
 
 
 #endif /* __SHM_H__ */
