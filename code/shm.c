@@ -40,6 +40,7 @@ struct restoo * open_resto(int nb_tables,int tab_capa[])
     for (int i = 0 ; i < nb_tables;i++) {
         rest_au_rang->tables[i].num = i;
         rest_au_rang->tables[i].capacite = tab_capa[i];
+        printf("rest_au rang capa : i : %d , capa : %d\n",i,rest_au_rang->tables[i].capacite);
         sem_init(&rest_au_rang->tables[i].sem_ta,1,0);
         sem_init(&rest_au_rang->tables[i].sem_time,1,0);
         sem_init(&rest_au_rang->tables[i].fin_table,1,0);  
@@ -276,7 +277,7 @@ int concat_chaine_in_membres(struct cahier_rapel * c,char conv[],int index)
         c->groupes[index].membres_gr[strlen(conv)] = '\0';
     }
     free(copie_f);
-    return i;
+    return index;
    
 }
 
@@ -311,7 +312,7 @@ int nb_membres_gr(char membres[80])
     int j = 0;
     int nb_membres = 0;
     int taille_mot = 0;
-    while ( i < taille_membres) {
+    while (i < taille_membres) {
         if (isalpha(membres[i]) == 1024) {
             j = i;
             taille_mot = 0;

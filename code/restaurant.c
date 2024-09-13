@@ -80,7 +80,7 @@ int table_occuper(struct table *t)
 struct r_tab {
     struct restoo * r;
     int index_table;
-    int time_open;
+    int duree_repas;
 };
 
 
@@ -105,38 +105,44 @@ void *exec_table_by_thread(void * r_ta)
 {
     struct r_tab * re_ta = r_ta;
     int index_table = re_ta->index_table;
-    int time_open = re_ta->time_open;
+    int duree_repas = re_ta->duree_repas;
     struct table * t = &(re_ta->r->tables[index_table]);
+    printf("t -> capacite : %d\n",t->capacite);
+    printf("convives prévues : %d\n",t->nb_convive_t);
     struct timespec clock;
     int t_s = -1;
     int occuper = -1;
-    int v = -1;
+   // int v = -1;
     int close = -1;
     //int goon = 1;
-    while (((sem_getvalue(&t->fin_table,&t_s) == 0) && (t_s != 1))
+    while(((sem_getvalue(&t->fin_table,&t_s) == 0))
         && (close != 1)) {
 
-        /*clock_gettime(CLOCK_REALTIME,&clock);
-        if (time_open >= 1000) {
-            clock.tv_sec+= time_open/1000;
-            clock.tv_nsec+= (time_open % 1000)*1000000;
+        //clock_gettime(CLOCK_REALTIME,&clock);
+        if (duree_repas >= 1000) {
+            clock.tv_sec+= duree_repas/1000;
+            clock.tv_nsec+= (duree_repas % 1000)*1000000;
         }
         else {
-            clock.tv_nsec+= (time_open * 1000000);
+            clock.tv_nsec+= (duree_repas * 1000000);
         }
        
-        sem_timedwait(&t->fin_table,&clock);
         if(occuper > 0) {
+            sem_wait(&t->sem_ta);
             //sem_getvalue(&t->sem_ta,&v);
-            sem_timedwait(&t->fin_table,&clock);
-            //sleep(1);
+            //sem_timedwait(&t->fin_table,&clock);
             printf("begin sleep \n");
+            //sleep(1);
             //clock_nanosleep(CLOCK_MONOTONIC, 0, &clock, NULL);
+            //usleep(duree_repas);
+            //sleep(1);
+            usleep(duree_repas*1000);
+            //print_table(t);
             printf("after sleep \n");
             memset(t->convive,'\0',80);
-            sem_post(&t->sem_ta);
-            //sem_post(&t->fin_table);
-            sem_getvalue(&t->sem_ta,&v);
+            //sem_post(&t->sem_ta);
+            sem_post(&t->fin_table);
+            //sem_getvalue(&t->sem_ta,&v);
 
             //sem_post(&t->fin_table);
             //printf("v : %d\n",v);
@@ -155,51 +161,23 @@ void *exec_table_by_thread(void * r_ta)
         //printf("fermeture : %d \n",fermeture);
         if(((occuper == 0) && (conv_in_t == 0)) && (fermeture == 1)) {
             close = 1;
+            printf("h \n");
         }
         else {
-            if((occuper == 1) && (fermeture == 1)) {
+            /*if((occuper == 1) && (fermeture == 1)) {
                 printf("occuper \n");
                 print_table(t);
                 close = 1; // NORMALEMENT NON 
             }
             else {
+                printf("oo \n");
                 if(occuper == 1)
                     print_table(t);
                 if(fermeture == 1)
                     close = 1;
-            }
-        }*/
-        clock_gettime(CLOCK_REALTIME,&clock);
-        if (time_open >= 1000) {
-            clock.tv_sec+= time_open/1000;
-            clock.tv_nsec+= (time_open % 1000)*1000000;
-        }
-        else {
-            clock.tv_nsec+= (time_open * 1000000);
+            }*/
         }
        
-        sem_timedwait(&t->fin_table,&clock);
-
-        if (occuper > 0) {
-            sem_getvalue(&t->sem_ta,&v);
-            memset(t->convive,'\0',80);
-            sem_post(&t->sem_ta);
-            sem_getvalue(&t->sem_ta,&v);
-        }
-
-        int S_fin_var = -1;
-        int sem_fin = sem_getvalue(&re_ta->r->S_fin,&S_fin_var);
-        int fermeture = -1;
-        if ((sem_fin == 0) && (S_fin_var == 1))
-          
-            fermeture = 1;
-        
-        occuper =  table_occuper(t);
-    
-        int conv_in_t = -1;
-        sem_getvalue(&t->sem_time,&conv_in_t);
-        if (((occuper == 0) && (conv_in_t == 0)) && (fermeture == 1)) 
-            close = 1;
         
     }
     pthread_exit(NULL);
@@ -212,14 +190,14 @@ int main(int argc,char *argv[])
 {
     //Args//
     if (argc < 3) {
-        fprintf(stderr,"usage: %s temps_d'ouverture liste_de_tables \n",argv[0]);
+        fprintf(stderr,"usage: %s duree_repas liste_de_tables \n",argv[0]);
         exit(EXIT_FAILURE);
     }
 
     is_number(argv[1]);//
     is_number(argv[2]);//la fonction fait elle meme la sortie erreur
 
-    int time_open = atoi(argv[1]);
+    int duree_repas = atoi(argv[1]);
 
     int min_s = 1;
     int max_s = 21600000;
@@ -234,6 +212,7 @@ int main(int argc,char *argv[])
         && ((c_p = atoi(argv[t])) > 0)))) {
         capacite_totale_resto+=c_p;
         l_tables[t-2] = c_p;
+        printf("cp : %d\n",c_p);
         t++; 
     }
     
@@ -250,8 +229,8 @@ int main(int argc,char *argv[])
         exit(EXIT_FAILURE);
     }
 
-    if ((time_open < min_s) || (time_open > max_s)) {
-        fprintf(stderr,"usage: Temps d'ouverture trop petit/grand \n");
+    if ((duree_repas < min_s) || (duree_repas > max_s)) {
+        fprintf(stderr,"usage: Temps du repas trop petit/grand \n");
         exit(EXIT_FAILURE);
     }
     struct restoo * r =  open_resto(nombr_table,l_tables);
@@ -259,14 +238,14 @@ int main(int argc,char *argv[])
 
     struct r_tab *tab_rtab;
     tab_rtab = calloc(nombr_table , sizeof(struct r_tab));
-   
+    print_table(&r->tables[0]);
     pthread_t *tid;
     tid = calloc(nombr_table ,sizeof(pthread_t));
     for (int i = 0 ; i < nombr_table;i++) {
         tab_rtab[i].r = r;
         int c = i;
         tab_rtab[i].index_table = c;
-        tab_rtab[i].time_open = time_open;
+        tab_rtab[i].duree_repas = duree_repas;
         if ((errno = pthread_create(&tid[i],NULL,exec_table_by_thread,&tab_rtab[i])) > 0) {
             fprintf(stderr,"thread create\n");
             exit(EXIT_FAILURE);
@@ -284,8 +263,8 @@ int main(int argc,char *argv[])
     if (nb_c == 0)
         nb_g = 0;
 
-    //print_resto(r);
-    //print_cahier(c);
+    print_resto(r);
+    print_cahier(c);
     close_resto();
     close_cahier();
     printf("%d convives servis dans %d groupes\n",nb_c,nb_g);
