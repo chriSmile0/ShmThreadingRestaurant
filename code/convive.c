@@ -33,6 +33,36 @@ void copie_tab(struct table source[],struct table dest[],int same_taille)
 }
 
 /**
+ * @brief Search if a token is present on a string
+ * @param[:string] the string to analyze
+ * @param[:token] the token search in string
+ * @return >0 or 0 
+*/
+int is_present(char * string, char *token) {
+    int i = 0;
+    char c;
+    char first_letter_token = token[0];
+    size_t len_token = strlen(token);
+    int cpt = 0;
+    while((c = *(string+i)) != '\0') {
+        if(c == first_letter_token) {
+            int j = i + len_token;
+            int k = i;
+            int h = 0;
+            while((k < j) && (string[k]==token[h])) {
+                k++;
+                h++;
+            }
+            if(k==j) 
+                cpt++;
+                 
+        }
+        i++;
+    }
+    return cpt;
+}
+
+/**
  * @brief Cherche la table la mieux adapté pour le convive entrant
  *        
  * 
@@ -48,46 +78,17 @@ int plus_petite_table_possible(int nb_place,struct table tab_tables[],
                                 int taille_tab_t)
 {
     int i = 0;
-    int good_size = nb_place;
-    /*int j = 0;
-    int tmp_max=0;*/
-
-    /*struct table tab_a_trier[taille_tab_t]; 
-    copie_tab(tab_tables,tab_a_trier,taille_tab_t);
-
-    for (i = taille_tab_t-2;i >= 0;i--) {
-        for ( j = 0;j <= i;j++) {
-            if (tab_a_trier[j].capacite >= tab_a_trier[j+1].capacite) {
-                tmp_max = tab_a_trier[j+1].capacite;
-                tab_a_trier[j+1].capacite = tab_a_trier[j].capacite;
-                tab_a_trier[j].capacite = tmp_max;
-            }
-        }
-    }
-    
-    i = taille_tab_t -1;
     int tim = -1;
-    while ((tab_a_trier[i].capacite > good_size) && ( i > 0) 
-            && ((sem_getvalue(&tab_a_trier[i].sem_time,&tim) == 0) 
-            && (tim != 0))) {
-        i--;
-    }*/
-    int tim = -1;
-    //int found_perfect = -1;
     int last_fit = -1;
-    //int last_fit_nb_place = 0;
-    while((sem_getvalue(&tab_tables[i].sem_ta,&tim) == 0) && (tim != 1)
+    while((sem_getvalue(&tab_tables[i].sem_time,&tim) == 0) && (tim != 1)
         && (i < taille_tab_t)) {
             //SEARCH PERFECT TABLE
         int capa_table = tab_tables[i].capacite;
-        printf("in loop \n");
         if(capa_table == nb_place) 
             return i;
 
         if(capa_table > nb_place) {
-            printf("last fit %d\n",last_fit);
             if(last_fit != -1) { 
-                printf("here \n");
                 if(capa_table < tab_tables[last_fit].capacite)
                     last_fit = i;
             
@@ -98,12 +99,7 @@ int plus_petite_table_possible(int nb_place,struct table tab_tables[],
         }
         i++;
     }
-    printf("tim : %d\n",tim);
-    if(last_fit != -1)
-        return last_fit;
-    if(tab_tables[i].capacite < good_size)
-        return -1;
-    return i;
+    return last_fit;
 }
 
 /**
@@ -126,17 +122,15 @@ int inserer_convive_first(struct restoo * r,char conv[],int nb_place)
     strncpy(copie_f,conv,strlen(conv));
     char * copie = malloc(80*sizeof(char));
     memset(copie,'\0',80);
-
     int nb_tables_max = r->nb_tables;
-
     int chercher_table_libre = plus_petite_table_possible(nb_place,r->tables,nb_tables_max);
 
-    printf("chercher table libre : %d\n",chercher_table_libre);
     int l_b = chercher_table_libre;
+    printf("l_b ::: %d\n",l_b);
     strncpy(copie,r->tables[l_b].convive,strlen(r->tables[l_b].convive));
     while (copie[i] != '\0')
         i++;
-    printf("i : %d\n",i);
+
     if(i == 0) {
         strncpy(r->tables[l_b].convive,copie_f,strlen(copie_f));
         r->tables[l_b].convive[strlen(copie_f)] = '\0';
@@ -145,7 +139,6 @@ int inserer_convive_first(struct restoo * r,char conv[],int nb_place)
     
     free(copie_f);
     return l_b;
-   
 }
 
 /**
@@ -161,32 +154,12 @@ int inserer_convive_first(struct restoo * r,char conv[],int nb_place)
 
 int chercher_first_c(char convive_f[],struct restoo * r)
 {
-    int i = 0;
-    char chaine[10];
-    int j = 0;
-    int indice_fin_first = -1;
     int nb_t =  r->nb_tables;
-    int taille_conv = 0;
     int t = 0;
-    while( (indice_fin_first != -1) && (t < nb_t)) {
-        taille_conv = strlen(r->tables[t].convive);
-        i = 0;
-        while ( i < taille_conv) {
-            if (isalpha(r->tables[t].convive[i]) == 1024) {
-                j = i;
-                while ((r->tables[t].convive[j] != ' ') && (j < taille_conv)) 
-                    j++;
-
-                memset(chaine,'\0',10);
-                concat_maison(chaine,r->tables[t].convive,i,j);
-                if (strncmp(chaine,convive_f,strlen(convive_f)) == 0) 
-                    indice_fin_first = j;
-                
-            }
-            i+= i + j;
-        }
+    while((!is_present(r->tables[t].convive,convive_f)) && (t < nb_t)) 
         t++;
-    }
+    if(t == nb_t)
+        return -1;
     return t;
 }
 
@@ -196,19 +169,9 @@ int chercher_first_c(char convive_f[],struct restoo * r)
 */
 
 void advance_string(char *original_string, int pos) {
-    /*size_t size = strlen(original_string);
-    char *string_malloc = (char*)(malloc(sizeof(char)*size+1));
-    snprintf(string_malloc,size+1,"%s",original_string);
-    char *ptr = string_malloc;
-    ptr+=2;
-    //strcat(ptr,"III");
-    printf("ptr advance : %s\n",ptr);*/
-    //printf("str advance : %s\n",string_malloc);
-    //original_string = ptr;
     char *ptr = original_string;
     ptr+=pos;
     memcpy(original_string,ptr,strlen(ptr)+pos);
-    //memset(original_string,'\0',10);
 }
 
 char * substr(char *string, int dept, int end) {
@@ -241,9 +204,30 @@ char * strchr_(char * string, char search, int advance_src) {
     } 
 }
 
-char * editString(char * str) {
-    strcat(str,"LOL");
-    return NULL;
+char * strtok_(char * string, char *token, int advance_src) {
+    int i = 0;
+    char c;
+    char first_letter_token = token[0];
+    size_t len_token = strlen(token);
+    while((c = *(string+i)) != '\0') {
+        if(c == first_letter_token) {
+            int j = i + len_token;
+            int k = i;
+            int h = 0;
+            while((k < j) && (string[k]==token[h])) {
+                k++;
+                h++;
+            }
+            if(k==j) {
+                char * rt = substr(string,0,i);
+                if(advance_src) 
+                    advance_string(string,j);
+                return rt;
+            }  
+        }
+        i++;
+    }
+    return string; 
 }
 
 /**
@@ -253,14 +237,14 @@ char * editString(char * str) {
  * @return struct strings contains all strings we separate by separator but without
  *          the separator character
 */
-struct strings line_in_strings(char convive[], char separator) {
+struct strings line_in_strings(char string[], char separator) {
     struct strings s;
     int i = 0; 
     while((i < 6)) {
-        char * rt = strchr_(convive,separator,1);
+        char * rt = strchr_(string,separator,1);
         s.tab[i] = rt;
         i++;
-        if(strcmp(convive,rt)==0)
+        if(strcmp(string,rt)==0)
             break;
     }
     s.nb_string = i;
@@ -273,7 +257,7 @@ int main(int argc,char *argv[])
     (void) argc;
     (void) argv;
     //ARGS
-    /*if (argc != 3) {
+    if (argc != 3) {
         fprintf(stderr,
         "usage: %s Nom_du_premier_convive nb_place_resa ou Nom_convive Premier_convive\n"
         ,argv[0]);
@@ -322,10 +306,13 @@ int main(int argc,char *argv[])
             if(nb_place_resa == 1) {
                 //sem_post(&r->tables[placer].fin_table);
                 sem_post(&r->tables[placer].sem_ta);
+                sem_post(&r->tables[placer].sem_time);
                 c->groupes[index].nb_membres_gr = nb_place_resa;
                 printf("index_g : %d\n",index);
                 printf("c groupes resa : %d\n",c->groupes[index].nb_membres_gr);
                 sem_wait(&r->tables[placer].fin_table);
+                printf("levé résa \n");
+                sem_wait(&r->tables[placer].sem_time);
                 //r->nb_tables_occuper--;
             }
             
@@ -342,18 +329,16 @@ int main(int argc,char *argv[])
         }
     }
     else {
-        printf("là \n");
         char resa_conv[10];
         snprintf(conv_invit,len_1+1,"%s",argv[1]);
         snprintf(resa_conv,strlen(argv[2])+1,"%s",argv[2]);
-        printf("resa_conv : %s\n",resa_conv);
         int placer_invit = chercher_first_c(resa_conv,r);
                         
         if (placer_invit == -1) 
             printf("Desolé %s pas de %s ici \n",argv[1],argv[2]);
         else {
             printf("Bienvenue %s , vous avez la table %d\n",argv[1],placer_invit);
-            int x = inserer_in_groupe(conv_invit,c,resa_conv,c->nb_groupe);
+            /*int x = inserer_in_groupe(conv_invit,c,resa_conv,c->nb_groupe);
             printf("x : %d\n",x);
             int nb_membres_groupe = nb_membres_gr(c->groupes[x].membres_gr);
             printf("coucou");
@@ -365,30 +350,12 @@ int main(int argc,char *argv[])
 
 
             sem_wait(&r->tables[placer_invit].sem_ta);
-            sem_wait(&r->tables[placer_invit].sem_time);
+            sem_wait(&r->tables[placer_invit].sem_time);*/
         }
-    }*/
-    char convive[80] = "HELLO COUCOU JEAN";
-    struct strings r = line_in_strings(convive,' ');
-    for(int i = 0; i < r.nb_string ;i++) {
-        printf("s : %s\n",r.tab[i]);
     }
-    /*printf("%s\n",r.tab[0]);
-    printf("%s\n",r.tab[r.nb_string-1]);*/
-    //printf("%s\n",substr("HELLO",1,4));
-    /*char string[] = "HELLO COUCOU"; 
-    printf("%s\n",strchr_(string,' ',1));
-    printf("advance true = %s\n",string);*/
-
-    /*
-        // TO KEEP 
-        char *string_malloc = (char*)(malloc(sizeof(char)*10));
-        int size = 0;
-        snprintf(string_malloc,(size=(strlen("HELLO")))+1,"%s","HELLO");
-        advance_string(string_malloc,3);
-        printf("advance : %s\n",string_malloc);
-    */
-    
-   
+    /*char string[80] = "COUCOU JEAN ICI JOE LE TAXI";
+    //printf("%s\n",strtok_(string,"JOE",0));
+    char param[10] = "JEAN";
+    printf("%s is in %s ? -> %s\n",param,string,(is_present(string,param) ? "YES" : "NO"));*/
     return 0;
 }

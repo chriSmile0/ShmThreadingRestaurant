@@ -77,6 +77,12 @@ int table_occuper(struct table *t)
     return i;
 }
 
+int table_resa(struct table *t) {
+    int val = -1;
+    sem_getvalue(&t->sem_time,&val);
+    return val;
+}
+
 struct r_tab {
     struct restoo * r;
     int index_table;
@@ -127,7 +133,7 @@ void *exec_table_by_thread(void * r_ta)
             clock.tv_nsec+= (duree_repas * 1000000);
         }
        
-        if(occuper > 0) {
+        if(occuper > 0) { // REPAS PEUT COMMENCER 
             sem_wait(&t->sem_ta);
             //sem_getvalue(&t->sem_ta,&v);
             //sem_timedwait(&t->fin_table,&clock);
@@ -136,7 +142,8 @@ void *exec_table_by_thread(void * r_ta)
             //clock_nanosleep(CLOCK_MONOTONIC, 0, &clock, NULL);
             //usleep(duree_repas);
             //sleep(1);
-            usleep(duree_repas*1000);
+            usleep(duree_repas*1000); //!!!!!!!!! IMPORTANT TO KEEP 
+            //sleep(10);
             //print_table(t);
             printf("after sleep \n");
             memset(t->convive,'\0',80);
@@ -156,10 +163,10 @@ void *exec_table_by_thread(void * r_ta)
         
         occuper =  table_occuper(t);
     
-        int conv_in_t = -1;
-        sem_getvalue(&t->sem_time,&conv_in_t);
+        //int conv_in_t = -1;
+        //sem_getvalue(&t->sem_time,&conv_in_t);
         //printf("fermeture : %d \n",fermeture);
-        if(((occuper == 0) && (conv_in_t == 0)) && (fermeture == 1)) {
+        if((occuper == 0) && (fermeture == 1)) {
             close = 1;
             printf("h \n");
         }

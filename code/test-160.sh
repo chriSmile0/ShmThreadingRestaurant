@@ -8,7 +8,7 @@
 
 REPAS=300                               # durée d'un repas, en ms
 
-debut_restaurant $REPAS 4 2             # 2 tables : on en voudrait une 3e
+debut_restaurant $REPAS 4 2	            # 2 tables : on en voudrait une 3e
 
 # on occupe deux tables
 duree_convive A 1 $((REPAS-MARGE)) $((REPAS+MARGE)) &
