@@ -66,15 +66,13 @@ int nb_convives_installer(struct table t)
 
 
 /* *************Debut thread ****************** */
-
+inline void set_table_occuper(struct table *t) {sem_post(&t->sem_ta);}
 
 int table_occuper(struct table *t)
-{  
-    int i = 0;
-    if ((nb_convives_installer(*t)) == t->nb_convive_t)
-        i++;
-    
-    return i;
+{
+    int val = -1;
+    sem_getvalue(&t->sem_ta,&val);
+    return val;
 }
 
 int table_resa(struct table *t) {
@@ -134,10 +132,10 @@ void *exec_table_by_thread(void * r_ta)
         }
        
         if(occuper > 0) { // REPAS PEUT COMMENCER 
+            printf("begin sleep \n");
             sem_wait(&t->sem_ta);
             //sem_getvalue(&t->sem_ta,&v);
             //sem_timedwait(&t->fin_table,&clock);
-            printf("begin sleep \n");
             //sleep(1);
             //clock_nanosleep(CLOCK_MONOTONIC, 0, &clock, NULL);
             //usleep(duree_repas);
@@ -245,7 +243,6 @@ int main(int argc,char *argv[])
 
     struct r_tab *tab_rtab;
     tab_rtab = calloc(nombr_table , sizeof(struct r_tab));
-    print_table(&r->tables[0]);
     pthread_t *tid;
     tid = calloc(nombr_table ,sizeof(pthread_t));
     for (int i = 0 ; i < nombr_table;i++) {

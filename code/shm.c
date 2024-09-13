@@ -44,6 +44,7 @@ struct restoo * open_resto(int nb_tables,int tab_capa[])
         sem_init(&rest_au_rang->tables[i].sem_ta,1,0);
         sem_init(&rest_au_rang->tables[i].sem_time,1,0);
         sem_init(&rest_au_rang->tables[i].fin_table,1,0);  
+        sem_init(&rest_au_rang->tables[i].sem_stand,1,0);  
     }
     return rest_au_rang;
 }
@@ -227,7 +228,7 @@ void lire_cahier(struct cahier_rapel * c,FILE *fd)
 }
 
 
-int creer_groupe(struct cahier_rapel * c)
+int creer_groupe(struct cahier_rapel * c, int num_table)
 {
     int nb_g = c->nb_groupe;
     int i = 0;
@@ -242,6 +243,8 @@ int creer_groupe(struct cahier_rapel * c)
         c = new_cahier;
     }
     c->groupes[i].num_gr = i+1;
+    c->groupes[i].num_table = num_table;
+    c->groupes[i].g_complet = 0;
     return i;
 }
 
@@ -389,9 +392,11 @@ int inserer_in_groupe(char convive_a[],struct cahier_rapel * c,
         i++;
 
     printf("i : %d\n",i);
-    
     if (i == nb_groupe)
         return -1;
+    else 
+        if(c->groupes[i].g_complet == 1)
+            return -1;
 
     snprintf(c->groupes[i].membres_gr + search,80," %s",convive_a);
     return i;
@@ -452,6 +457,7 @@ void print_group(struct group *g) {
     printf("\n********** GROUPE n°%d **********\n",g->num_gr);
     printf("Nombre de membres du groupe : %d\n",g->nb_membres_gr);
     printf("Membres du groupe : %s\n",g->membres_gr);
+    printf("Numéro de la table du diner : %d\n",g->num_table);
 }
 
 void print_cahier(struct cahier_rapel *c) {

@@ -26,6 +26,8 @@ struct table {
     sem_t sem_time;
     /** Fin du service de la table*/
     sem_t fin_table;
+    /** Fin du repas communiquer aux invités de celui qui a résa*/
+    sem_t sem_stand;
     /** Liste de convive qui seront de taille capacite*/
     char convive[80];
 };
@@ -35,6 +37,10 @@ struct group {
     int num_gr;
     //Nombre de membres//
     int nb_membres_gr;
+    //Numéro de la table
+    int num_table;
+    //Groupe au complet ?
+    int g_complet;
     char membres_gr[80];//Max 6 noms par groupes séparer par un espace
 };
 
@@ -207,11 +213,12 @@ int debarasser_table(struct table t);
  * @brief Creation d'un groupe ( a finir)
  * 
  * @param[:c] le cahier
+ * @param[:num_table] le numéro de la table que/qu'à occuper le groupe
  *
  * @return retourne 1 si bonne execution
 */
 
-int creer_groupe(struct cahier_rapel * c);
+int creer_groupe(struct cahier_rapel * c, int num_table);
 
 /** 
  * @brief Chercher si le le convive entrer en parametre est deja dans les 
