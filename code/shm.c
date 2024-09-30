@@ -35,16 +35,17 @@ struct restoo * open_resto(int nb_tables,int tab_capa[])
     close(fd);
     rest_au_rang->taille = taille;
     rest_au_rang->nb_tables = nb_tables;
-    sem_init(&rest_au_rang->S_fin,1,0);
+    sem_init(&rest_au_rang->sem_fin_service_resto,1,0);
+    sem_init(&rest_au_rang->sem_fin_resto,1,0);
 
     for (int i = 0 ; i < nb_tables;i++) {
         rest_au_rang->tables[i].num = i;
         rest_au_rang->tables[i].capacite = tab_capa[i];
         printf("rest_au rang capa : i : %d , capa : %d\n",i,rest_au_rang->tables[i].capacite);
-        sem_init(&rest_au_rang->tables[i].sem_ta,1,0);
-        sem_init(&rest_au_rang->tables[i].sem_time,1,0);
-        sem_init(&rest_au_rang->tables[i].fin_table,1,0);  
-        sem_init(&rest_au_rang->tables[i].sem_stand,1,0);  
+        sem_init(&rest_au_rang->tables[i].sem_service,1,0);
+        sem_init(&rest_au_rang->tables[i].sem_resa,1,0);
+        sem_init(&rest_au_rang->tables[i].sem_fin_repas,1,0);  
+        sem_init(&rest_au_rang->tables[i].sem_fin_repas_convive,1,0);  
     }
     return rest_au_rang;
 }
@@ -202,7 +203,7 @@ void lire_resto(struct restoo * r,FILE *fd)
     for (int i = 0 ; i < nb_table; i++) {
         struct table * t = &(r->tables[i]);
         int v = 0;
-        if (sem_getvalue (&(t->sem_ta), &v) == -1)
+        if (sem_getvalue (&(t->sem_service), &v) == -1)
             perror ("sem_getvalue");
 
         fprintf(fd, "table %d :",t->num);
@@ -245,6 +246,8 @@ int creer_groupe(struct cahier_rapel * c, int num_table)
     c->groupes[i].num_gr = i+1;
     c->groupes[i].num_table = num_table;
     c->groupes[i].g_complet = 0;
+    c->groupes[i].membres_present = 1;
+    sem_init(&c->groupes[i].sem_protect_mempre,1,1);
     return i;
 }
 
@@ -286,8 +289,9 @@ int concat_chaine_in_membres(struct cahier_rapel * c,char conv[],int index)
 
 int chercher_first(char convive_f[],char membres[80])
 {
-    int i = 0;
-    int taille_membres = strlen(membres);
+    //int i = 0;
+    /*int taille_membres = strlen(membres);
+    printf("taille membres %d\n",taille_membres);
     char chaine[10];
     int j = 0;
     int indice_fin_first = -1;
@@ -304,8 +308,9 @@ int chercher_first(char convive_f[],char membres[80])
                
         }
         i+= i + j;
-    }
-    return indice_fin_first;
+    }*/
+    strcat(membres,convive_f);
+    return strlen(membres);
 }
 
 int nb_membres_gr(char membres[80])
@@ -386,19 +391,21 @@ int inserer_in_groupe(char convive_a[],struct cahier_rapel * c,
                         char convive_f[], int nb_groupe)
 {
     int i = 0;
-    int search = -2;
-    while ((((search = chercher_first(convive_f,c->groupes[i].membres_gr)) == -1)) 
-            && (i < nb_groupe)) 
+    int present = -1;
+    while((!(present = is_present(c->groupes[i].membres_gr,convive_f))) 
+            && (i < nb_groupe))
         i++;
 
     printf("i : %d\n",i);
-    if (i == nb_groupe)
+
+    if(i == nb_groupe)
         return -1;
     else 
         if(c->groupes[i].g_complet == 1)
             return -1;
 
-    snprintf(c->groupes[i].membres_gr + search,80," %s",convive_a);
+    snprintf(c->groupes[i].membres_gr + strlen(c->groupes[i].membres_gr),80," %s",convive_a);
+    //c->groupes[i].membres_present++;
     return i;
 }
 
@@ -426,15 +433,15 @@ void print_table(struct table *t) {
     printf("\n********** TABLE n°%d **********\n",t->num);
     printf("Capacite de la table : %d\n",t->capacite);
     printf("Convives prévus pour la table : %d\n",t->nb_convive_t);
-    int ta;
-    sem_getvalue(&t->sem_ta, &ta);
-    printf ("%s\n",(ta) ? "En Service": "Pas en Service");
-    int tim;
-    sem_getvalue(&t->sem_time, &tim);
-    printf ("%s\n",(tim) ? "Reservé": "Non Reservé");
-    int fin_ta;
-    sem_getvalue(&t->fin_table, &fin_ta);
-    printf ("%s\n", (ta) ? ((fin_ta) ? "Service terminé" : "Service en cours") : "");
+    int service;
+    sem_getvalue(&t->sem_service, &service);
+    printf ("%s\n",(service==1) ? "En Service": "Pas en Service");
+    int resa;
+    sem_getvalue(&t->sem_resa, &resa);
+    printf ("%s\n",(resa==1) ? "Reservé": "Non Reservé");
+    int fin_repas;
+    sem_getvalue(&t->sem_fin_repas, &fin_repas);
+    printf ("%s\n", (service==1) ? ((fin_repas) ? "Service terminé" : "Service en cours") : "");
     printf("Convives : %s\n",t->convive);
 }
 
@@ -445,9 +452,12 @@ void print_resto(struct restoo *r) {
     printf("Nombre de tables occupées : %d\n",r->nb_tables_occuper);
     int nb_table = r->nb_tables;
     printf("Nombre totale de table du restaurant : %d\n",nb_table);
-    int sfin;
-    sem_getvalue(&r->S_fin, &sfin);
-    printf ("%s\n",(sfin) ? "Fini": "Pas fini");
+    int sfin_service;
+    sem_getvalue(&r->sem_fin_service_resto, &sfin_service);
+    printf ("%s\n",(sfin_service) ? "Fin du service": "Service Pas fini");
+    int sfin_resto;
+    sem_getvalue(&r->sem_fin_resto, &sfin_resto);
+    printf ("%s\n",(sfin_resto) ? "Fin du restaurant": "Resto Pas fini");
     for(int i = 0; i < nb_table; i++)
         print_table(&r->tables[i]);
    
@@ -456,6 +466,7 @@ void print_resto(struct restoo *r) {
 void print_group(struct group *g) {
     printf("\n********** GROUPE n°%d **********\n",g->num_gr);
     printf("Nombre de membres du groupe : %d\n",g->nb_membres_gr);
+    printf("Nombre de membres du groupe présent : %d\n",g->membres_present);
     printf("Membres du groupe : %s\n",g->membres_gr);
     printf("Numéro de la table du diner : %d\n",g->num_table);
 }
@@ -468,4 +479,34 @@ void print_cahier(struct cahier_rapel *c) {
     for(int i = 0 ; i < nb_groupe; i++) 
         print_group(&c->groupes[i]);
 
+}
+
+/**
+ * @brief Search if a token is present on a string
+ * @param[:string] the string to analyze
+ * @param[:token] the token search in string
+ * @return >0 or 0 
+*/
+int is_present(char * string, char *token) {
+    int i = 0;
+    char c;
+    char first_letter_token = token[0];
+    size_t len_token = strlen(token);
+    int cpt = 0;
+    while((c = *(string+i)) != '\0') {
+        if(c == first_letter_token) {
+            int j = i + len_token;
+            int k = i;
+            int h = 0;
+            while((k < j) && (string[k]==token[h])) {
+                k++;
+                h++;
+            }
+            if(k==j) 
+                cpt++;
+                 
+        }
+        i++;
+    }
+    return cpt;
 }

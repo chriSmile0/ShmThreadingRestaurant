@@ -50,9 +50,10 @@ int nb_convives(struct cahier_rapel * c,int nb_groupe)
 {
     int nombre_convive = 0;
     for (int i = 0 ; i < nb_groupe ;i++) {
-        int nb_membres_groupe = nb_membres_gr(c->groupes[i].membres_gr);
+        /*int nb_membres_groupe = nb_membres_gr(c->groupes[i].membres_gr);
         int nombre_absent = nb_membres_absent(c->groupes[i].membres_gr);
-        nombre_convive += (nb_membres_groupe - nombre_absent);
+        nombre_convive += (nb_membres_groupe - nombre_absent);*/
+        nombre_convive += c->groupes[i].membres_present;
     }
     return nombre_convive;
 }
@@ -66,18 +67,19 @@ int nb_convives_installer(struct table t)
 
 
 /* *************Debut thread ****************** */
-inline void set_table_occuper(struct table *t) {sem_post(&t->sem_ta);}
+void set_table_enservice(struct table *t) {sem_post(&t->sem_service);}
 
-int table_occuper(struct table *t)
-{
+void set_table_resa(struct table *t) {sem_post(&t->sem_resa);}
+
+int table_enservice(struct table *t) {
     int val = -1;
-    sem_getvalue(&t->sem_ta,&val);
+    sem_getvalue(&t->sem_service,&val);
     return val;
 }
 
 int table_resa(struct table *t) {
     int val = -1;
-    sem_getvalue(&t->sem_time,&val);
+    sem_getvalue(&t->sem_resa,&val);
     return val;
 }
 
@@ -113,76 +115,65 @@ void *exec_table_by_thread(void * r_ta)
     struct table * t = &(re_ta->r->tables[index_table]);
     printf("t -> capacite : %d\n",t->capacite);
     printf("convives prévues : %d\n",t->nb_convive_t);
-    struct timespec clock;
+    //struct timespec clock;
     int t_s = -1;
     int occuper = -1;
-   // int v = -1;
+    (void) occuper;
+    int enservice = -1;
+    //int v = -1;
     int close = -1;
+    int last_fermeture = -1;
+    (void) last_fermeture;
     //int goon = 1;
-    while(((sem_getvalue(&t->fin_table,&t_s) == 0))
+    while(((sem_getvalue(&t->sem_fin_repas,&t_s) == 0))
         && (close != 1)) {
 
-        //clock_gettime(CLOCK_REALTIME,&clock);
-        if (duree_repas >= 1000) {
-            clock.tv_sec+= duree_repas/1000;
-            clock.tv_nsec+= (duree_repas % 1000)*1000000;
-        }
-        else {
-            clock.tv_nsec+= (duree_repas * 1000000);
-        }
-       
-        if(occuper > 0) { // REPAS PEUT COMMENCER 
-            printf("begin sleep \n");
-            sem_wait(&t->sem_ta);
-            //sem_getvalue(&t->sem_ta,&v);
-            //sem_timedwait(&t->fin_table,&clock);
-            //sleep(1);
-            //clock_nanosleep(CLOCK_MONOTONIC, 0, &clock, NULL);
-            //usleep(duree_repas);
-            //sleep(1);
+        if(enservice > 0) { //On mange 
+            sem_wait(&t->sem_resa);
             usleep(duree_repas*1000); //!!!!!!!!! IMPORTANT TO KEEP 
             //sleep(10);
-            //print_table(t);
-            printf("after sleep \n");
             memset(t->convive,'\0',80);
-            //sem_post(&t->sem_ta);
-            sem_post(&t->fin_table);
-            //sem_getvalue(&t->sem_ta,&v);
-
-            //sem_post(&t->fin_table);
-            //printf("v : %d\n",v);
+            sem_post(&t->sem_fin_repas);
         }
         
         int S_fin_var = -1;
-        int sem_fin = sem_getvalue(&re_ta->r->S_fin,&S_fin_var);
+        int sem_fin = sem_getvalue(&re_ta->r->sem_fin_service_resto,&S_fin_var);
         int fermeture = -1;
         if((sem_fin == 0) && (S_fin_var == 1))
             fermeture = 1;
         
-        occuper =  table_occuper(t);
-    
-        //int conv_in_t = -1;
-        //sem_getvalue(&t->sem_time,&conv_in_t);
-        //printf("fermeture : %d \n",fermeture);
-        if((occuper == 0) && (fermeture == 1)) {
-            close = 1;
-            printf("h \n");
+        enservice = table_enservice(t);
+        occuper = table_resa(t);
+        if(enservice == 0) {
+            //if(occuper == 1) {
+                //printf("seat \n");
+                /*if(fermeture == 1) {
+                    set_table_enservice(t);
+                    if(last_fermeture == 1)
+                        close = 1;
+                    last_fermeture = 1;
+                }*/
+            //}
+            //else {
+                if(fermeture == 1) {
+                    printf("occuper %d\n",occuper);
+                    if(occuper == 1) {
+                        //set_table_enservice(t);
+                        //enservice = 1;
+                        /*if(last_fermeture == 1)
+                            close = 1;
+                        last_fermeture = 1;*/
+                        printf("close occuper \n");
+                        close = 1;
+                    }
+                    else {
+                        printf("close no occuper \n");
+                        close = 1;
+                    }
+                    //printf("stand up \n");
+                }
+            //}
         }
-        else {
-            /*if((occuper == 1) && (fermeture == 1)) {
-                printf("occuper \n");
-                print_table(t);
-                close = 1; // NORMALEMENT NON 
-            }
-            else {
-                printf("oo \n");
-                if(occuper == 1)
-                    print_table(t);
-                if(fermeture == 1)
-                    close = 1;
-            }*/
-        }
-       
         
     }
     pthread_exit(NULL);

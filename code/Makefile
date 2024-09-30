@@ -57,4 +57,4 @@ clean:
 	rm -f *.log
 	rm -f *.aux *.pdf
 	rm -f tags core moodle.tgz
-
+	$(shell ./clean.sh)

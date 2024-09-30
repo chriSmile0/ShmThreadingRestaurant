@@ -21,13 +21,13 @@ struct table {
     /* nb_convive prevu a la table par le premier convive*/
     int nb_convive_t;
     /** Sémaphore représentant si elle est cours de service */
-    sem_t sem_ta;
+    sem_t sem_service;
     /** Semaphore pour signifier si quelqu'un a reserver cette table */
-    sem_t sem_time;
+    sem_t sem_resa;
     /** Fin du service de la table*/
-    sem_t fin_table;
+    sem_t sem_fin_repas;
     /** Fin du repas communiquer aux invités de celui qui a résa*/
-    sem_t sem_stand;
+    sem_t sem_fin_repas_convive;
     /** Liste de convive qui seront de taille capacite*/
     char convive[80];
 };
@@ -41,6 +41,10 @@ struct group {
     int num_table;
     //Groupe au complet ?
     int g_complet;
+    //Present dans le groupe 
+    int membres_present;
+    //Protection of up membres_present 
+    sem_t sem_protect_mempre;
     char membres_gr[80];//Max 6 noms par groupes séparer par un espace
 };
 
@@ -61,7 +65,10 @@ struct restoo {
     int nb_tables_occuper;
     /** Donne le nombre de tables */
     int nb_tables;
-    sem_t S_fin;
+    /** Fin du service dans le resto */
+    sem_t sem_fin_service_resto;
+    /** Fin du resto  */
+    sem_t sem_fin_resto;
     struct table tables [];
 };
 
@@ -373,5 +380,12 @@ void print_group(struct group *g);
 */
 void print_cahier(struct cahier_rapel *c);
 
+/**
+ * @brief Search if a token is present on a string
+ * @param[:string] the string to analyze
+ * @param[:token] the token search in string
+ * @return >0 or 0 
+*/
+int is_present(char * string, char *token);
 
 #endif /* __SHM_H__ */

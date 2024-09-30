@@ -15,6 +15,14 @@ int main(int argc,char *argv[])
     }
 
     struct restoo * r = access_resto();
-    sem_post(&r->S_fin);
+
+    // 190 -> On ne ferme pas si une table est encore occupé
+    printf("\n********FERMETURE**********\n");
+    print_resto(r);
+    // Attente d'un convive ou repas encore en cours 
+    // On lance tous les repas 
+    // "" = 210 extension 
+
+    sem_post(&r->sem_fin_service_resto);
     return 0;
 }
