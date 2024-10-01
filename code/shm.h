@@ -1,3 +1,4 @@
+#include "check.h"
 #ifndef SHM_H
 #define SHM_H
 
@@ -14,62 +15,62 @@
 
 /** Représentation d'une table dans le resto. */
 struct table {
-    /** Indice de la table suivant dans le chaînage */
-    int num;
-    /** Capacite max que peut acceuillir la table */
-    int capacite;
-    /* nb_convive prevu a la table par le premier convive*/
-    int nb_convive_t;
-    /** Sémaphore représentant si elle est cours de service */
-    sem_t sem_service;
-    /** Semaphore pour signifier si quelqu'un a reserver cette table */
-    sem_t sem_resa;
-    /** Fin du service de la table*/
-    sem_t sem_fin_repas;
-    /** Fin du repas communiquer aux invités de celui qui a résa*/
-    sem_t sem_fin_repas_convive;
-    /** Liste de convive qui seront de taille capacite*/
-    char convive[80];
+	/** Indice de la table suivant dans le chaînage */
+	int num;
+	/** Capacite max que peut acceuillir la table */
+	int capacite;
+	/* nb_convive prevu a la table par le premier convive*/
+	int nb_convive_t;
+	/** Sémaphore représentant si elle est cours de service */
+	sem_t sem_service;
+	/** Semaphore pour signifier si quelqu'un a reserver cette table */
+	sem_t sem_resa;
+	/** Fin du service de la table*/
+	sem_t sem_fin_repas;
+	/** Fin du repas communiquer aux invités de celui qui a résa*/
+	sem_t sem_fin_repas_convive;
+	/** Liste de convive qui seront de taille capacite*/
+	char convive[80];
 };
 
 struct group {
-    //Num du groupe
-    int num_gr;
-    //Nombre de membres//
-    int nb_membres_gr;
-    //Numéro de la table
-    int num_table;
-    //Groupe au complet ?
-    int g_complet;
-    //Present dans le groupe 
-    int membres_present;
-    //Protection of up membres_present 
-    sem_t sem_protect_mempre;
-    char membres_gr[80];//Max 6 noms par groupes séparer par un espace
+	//Num du groupe
+	int num_gr;
+	//Nombre de membres//
+	int nb_membres_gr;
+	//Numéro de la table
+	int num_table;
+	//Groupe au complet ?
+	int g_complet;
+	//Present dans le groupe 
+	int membres_present;
+	//Protection of up membres_present 
+	sem_t sem_protect_mempre;
+	char membres_gr[80];//Max 6 noms par groupes séparer par un espace
 };
 
 /* Representation du cahier de rappel*/
 
 struct cahier_rapel {
-    size_t taille;
-    int nb_groupe;
-    struct group groupes[];
+	size_t taille;
+	int nb_groupe;
+	struct group groupes[];
 };
 
 
 /** Représentation du resto complet. */
 struct restoo {
-    /** Taille du segment : Utile pour munmap */
-    size_t taille;
-    /** Donne le nombre de tables occuper*/
-    int nb_tables_occuper;
-    /** Donne le nombre de tables */
-    int nb_tables;
-    /** Fin du service dans le resto */
-    sem_t sem_fin_service_resto;
-    /** Fin du resto  */
-    sem_t sem_fin_resto;
-    struct table tables [];
+	/** Taille du segment : Utile pour munmap */
+	size_t taille;
+	/** Donne le nombre de tables occuper*/
+	int nb_tables_occuper;
+	/** Donne le nombre de tables */
+	int nb_tables;
+	/** Fin du service dans le resto */
+	sem_t sem_fin_service_resto;
+	/** Fin du resto  */
+	sem_t sem_fin_resto;
+	struct table tables [];
 };
 
 
@@ -83,309 +84,354 @@ struct restoo {
 
 
 /**
- * @brief Creation d'un segment partagée contenant un restaurant 
+ * @version 1.0 
  * 
- * @param[:nb_tables] Le nombre de table 
- * @param[:tab_capa] Le tableau qui contient toutes les capacités des tables
+ * @brief	Creation of the sharing memory contain the restaurant
+ * 
+ * @param[in]	[:nb_tables]	{int} 		Number of table 
+ * @param[in]	[:tab_capa] 	{int []}	All tables
  *
- * @return L'adresse du nouveau segment , projeté en mémoire
+ * @return {struct restoo *}	the adress of the new segment project in memory
  * 
+ * @author chriSmile0
 */
-
 struct restoo * open_resto(int nb_tables,int tab_capa[]);
 
 /** 
- * @brief Projection en mémoire du segment de mémoire partagée.
- *        Le segment de nom #RESTO_NAME est projeté en mémoire, et devient
- *        accessible en lecture/écriture via le pointeur fourni en valeur de
- *        retour. Le segment est partagé avec tous les autres processus qui
- *        le projettent également en mémoire.
+ * @version 1.0
  * 
- * @return  L'adresse du segment existant, projeté en mémoire
+ * @brief	
+ * 			Project in memory of the segment in the sharing memory.
+ * 			The segment of name #RESTO_NAME is project in memory and become
+ * 			in access in read/write with the pointer in the return value
+ * 			The segment is share with the all others process who project
+ * 			this segment in memory.
+ * 
+ * @param[:/] {void}
+ * 
+ * @return 	{struct restoo *}	Adress of the existing sharing segment.
+ * 
+ * @author chriSmile0
 */
-
-
 struct restoo * access_resto(void);
 
 /**
- * @brief Creation d'un segment partagée contenant un restaurant 
+ * @version 1.0 
  * 
- * @param[:nb_groupes] Le nombre de groupes (qui peut evoluer)
+ * @brief	Creation of the sharing memory contain the restaurant
+ * 
+ * @param[in]	[:nb_groupes]	{int} 		Number of groups
  *
- * @return L'adresse du nouveau segment , projeté en mémoire
+ * @return {struct cahier_rapel *}	the adress of the new segment project in memory
  * 
+ * @author chriSmile0
 */
-
 struct cahier_rapel * open_cahier(int nb_groupes);
 
 /** 
- * @brief Projection en mémoire du segment de mémoire partagée.
- *        Le segment de nom #CAHIER_NAME est projeté en mémoire, et devient
- *        accessible en lecture/écriture via le pointeur fourni en valeur de
- *        retour. Le segment est partagé avec tous les autres processus qui
- *        le projettent également en mémoire.
+ * @version 1.0
  * 
- * @return  L'adresse du segment existant, projeté en mémoire
-*/
-
-struct cahier_rapel * access_cahier();
-
-
-/** 
- * @brief Suppression du cahier
- *        
- * @return no return
-*/
-
-void close_cahier();
-
-/** 
- * @brief Creer un nouveau cahier avec la taille doubler par
- *        rapport a l'ancien. Comme au départ je met un nombre
- *        égal au nombre de tables, si jamais il y'a plus de groupes
- *        que de tables on agrandit le cahier en créant un nouveau 
- *
- * @param[:ancien] L'ancien cahier 
- *      
- * @return Le nouveau cahier
-*/
-
-struct cahier_rapel *  copie_cahier(struct cahier_rapel * ancien);
-
-/** 
- * @brief Cherche a savoir si une chaine de caracteres ne contient que des
- *        chiffres
+ * @brief 	Project in memory of the segment in the sharing memory.
+ * 			The segment of name #CAHIER_NAME is project in memory and become
+ * 			in access in read/write with the pointer in the return value
+ * 			The segment is share with the all others process who project
+ * 			this segment in memory.
  * 
- * @param[:chaine] La chaine a analyser
- *        
- * @return retourne 1 si bon , sinon exit(EXIT_FAILURE)
-*/
-
-int is_number(char chaine[]);
-
-/** 
- * @brief Cherche a savoir si une chaine est vide
+ * @param[:/] {void}
  * 
- * @param[:chaine] La chaine a analyser
- *        
- * @return retourne 0 si vide, sinon > 0
-*/
-
-int chaine_vide(char chaine[]);
-
-/** 
- * @brief Initialisation des champs convive des différentes tables
+ * @return 	{struct cahier_rapel *}	Adress of the existing sharing segment.
  * 
- * @param[:r] Le restaurant 
- *        
- * @return no return
+ * @author chriSmile0
 */
 
-void init_restoo(struct restoo * r);
+struct cahier_rapel * access_cahier(void);
 
-/** 
- * @brief Lit le restaurant 
- * 
- * @param[:r] Le restaurant
- * @param[:fd] Le descripteur de fichier sur lequel ecrire
- *        
- * @return no return
-*/
-
-void lire_resto(struct restoo * r, FILE *fd);
-
-/** 
- * @brief Lit le cahier
- * 
- * @param[:c] Le cahier
- * @param[:fd] Le descripteur de fichier sur lequel ecrire
- *        
- * @return no return
-*/
-
-void lire_cahier(struct cahier_rapel * c, FILE *fd);
-
-/** 
- * @brief Vide la table , et remet son sem_ta a 0 ,la rend libre pour un autre
- *        groupe
- * 
- * @param[:t] la table
- *
- * @return retourne 1 si terminer
-*/
-
-int debarasser_table(struct table t);
-
-/** 
- * @brief Creation d'un groupe ( a finir)
- * 
- * @param[:c] le cahier
- * @param[:num_table] le numéro de la table que/qu'à occuper le groupe
- *
- * @return retourne 1 si bonne execution
-*/
-
-int creer_groupe(struct cahier_rapel * c, int num_table);
-
-/** 
- * @brief Chercher si le le convive entrer en parametre est deja dans les 
- *        membres du groupe passer en parametre via sa chaine de caracteres
- *        membres
- * 
- * @param[:convive_f] le convive a chercher
- * @param[:membres] Les membres du groupe
- *
- * @return retourne l'indice de la dernière lettre du convive entrer en 
- *         parametre si réussite sinon -1
-*/
-
-int chercher_first(char convive_f[],char membres[80]);
-
-/** 
- * @brief Compte le nombre de membres dans la chaine passer en parametre
- * 
- * @param[:membres] Les membres du groupe
- *
- * @return retourne le nombre de membre
-*/
-
-int nb_membres_gr(char membres[80]);
 
 /**
- * @brief Compte le nombre de convives dans la chaine convive
+ * @version 1.0
+ *  
+ * @brief	Remove cahier
+ *        
+ * @param[:/] {void}
  * 
- * @param[:convive] Les convives de la table
+ * @return {void}
+ * 
+ * @author chriSmile0
+*/
+void close_cahier(void);
+
+/** 
+ * @version 1.0
+ * 
+ * @brief	Create a new cahier with the double size compared with the older
+ * 			Because at the start we init this with the same number of table 
+ * 			and it"s possible to have many groups than a number of a
+ * 			table.
+ * 			[NEW VERSION OF THIS FUNCTION IS NECESSARY!!]
  *
- * @return retourne le nombre de convive assis autour de la table
+ * @param[in]	[:older] {struct cahier_rapel *}	Older cahier 
+ *      
+ * @return {struct cahier_rapel *}	the new cahier
+ * 
+ * @author chriSmile0
+*/
+struct cahier_rapel *  copy_cahier(struct cahier_rapel * older);
+
+/** 
+ * @version 1.0
+ * 
+ * @brief 	String is empty ?
+ * 
+ * @param[in]	[:str]	{char [10]} String to analyze
+ *        
+ * @return {int}	>0 not empty, 0 is empty
+ * 
+ * @author chriSmile0
+*/
+int empty_str(char str[10]);
+
+/** 
+ * @version 1.0
+ * 
+ * @brief	isdigit string version
+ * 
+ * @param[in]	[:str]	{char []} String to analyze
+ *        
+ * @return {int}	1 if is ok , else exit(EXIT_FAILURE)
+ * 
+ * @author chriSmile0
+*/
+int is_number(char str[]);
+
+/** 
+ * @version 1.0
+ * 
+ * @brief 	Group creation
+ * 
+ * @param[out]	[:c] {struct cahier_rapel *}	the cahier
+ * @param[in]	[:num_table] {int}				the number of the table, of the group we has lunch
+ *
+ * @return {int}	1 if ok.
+ *
+ * @author chriSmile0
+*/
+int create_group(struct cahier_rapel * c, int num_table);
+
+/** 
+ * @version 1.0
+ * 
+ * @brief	Search the name of the first member in the members of group
+ * 
+ * @param[in]	[:convive_f] {char []}	The convive to search
+ * @param[in]	[:membres] {char [80]}	Members of the group
+ *
+ * @return	{int}	index of the last letter of the membres
+ * 					-1 if it's not found
+ * 
+ * @author chriSmile0
+*/
+int search_first(char convive_f[], char membres[80]);
+
+/** 
+ * @version 1.0
+ * 
+ * @brief 	Count the numbers of members in the string membres
+ * 
+ * @param[in]	[:membres] {char [80]} 	The members of the group
+ *
+ * @return	{int}	the number of members in the group
+ * 
+ * @author chriSmile0
 */
 
+int nb_members_gr(char membres[80]);
+
+/**
+ * @version 1.0
+ * 
+ * @brief	Count the numbers of convives in convive string
+ * 
+ * @param[in]	[:convive] {char [80]}	The convives of the table
+ *
+ * @return	{int}	the number of sit convives at the table
+ * 
+ * @author chriSmile0
+*/
 int nb_conv_t(char convive[80]);
 
 /** 
- * @brief Compte le nombre de membres absent dans la chaine passer en parametre
- *        Ils sont symboliser par la chaine "absent" donc quand le restaurant
- *        dit que tu commence a manger même si il manque des personnes du groupe
- *        alors il faut passer le semaphore de la table au bon niveau 
- *        pour que la restaurant sois en règle après.
+ * @version 1.0
  * 
- * @param[:membres] Les membres du groupe
+ * @brief	Count the number of not present people of a group
+ * 
+ * @param[in]	[:membres]	{char [80]}	Members of the group
  *
- * @return retourne le nombre d'absent du groupe, sois 0 ou plus
+ * @return	{int}	the number of not present members = 0 or more
+ * 
+ * @author chriSmile0
 */
-
-int nb_membres_absent(char membres[80]);
+int nb_members_not_present(char membres[80]);
 
 /** 
- * @brief Cherche a inserer dans un groupe un membre passer en parametre
- *        Si ce groupe est vide on copie sinon on concatene
+ * @version 1.0
  * 
- * @param[:c] Le cahier
- * @param[:conv] Le convive a inserer
+ * @brief	Insert a conv in a group
+ * 
+ * @param[out]	[:c]		{struct cahier_rapel *} Le cahier
+ * @param[in]	[:conv] 	{char []}				the convive to isnert
+ * @param[in]	[:index]	{int}					the index of the group in the cahier
  *
- * @return L'indice du groupe dans lequel on a inserer ce convive
+ * @return 	{int}	index of the group in the cahier where the insertion it was done
+ * 
+ * @author chriSmile0
 */
-
-int concat_chaine_in_membres(struct cahier_rapel * c,char conv[], int index);
+int concat_str_in_membres(struct cahier_rapel * c, char conv[], int index);
 
 /** 
- * @brief Fonction de concatenation qui concatene une chaine à une autre
- *        en partant de debut jusqu'à fin de la source
+ * @version 1.0
  * 
- * @param[:dest] la destination
- * @param[:source] la source 
- * @param[:debut] indice de debut de la source
- * @param[:fin] indice de fin de la source
+ * @brief	My insert_str version
+ * 
+ * @param[out]	[:dest] 	{char []} 	the destination
+ * @param[in]	[:source] 	{char []}	the source 
+ * @param[in]	[:begin] 	{int}		index of the begin of the source
+ * @param[in]	[:end] 		{int}		index of the end ot the source
  *
- * @return L'indice du groupe dans lequel on a inserer ce convive
+ * @return	{void}	the destination with source 	
+ * 
+ * @author chriSmile0
 */
-
-
-void concat_maison(char dest[],char source[],int debut,int fin);
+void insert_str_homemade(char dest[], char source[], int begin, int end);
 
 /** 
- * @brief Cherche a inserer dans un groupe un membre passer en parametre
- *        Si le convive chercher est bien là c'est bon sinon on refoule
+ * @version 1.0
  * 
- * @param[:convive_a] Le convive attendu
- * @param[:c] Le cahier
- * @param[:convive_f] Le premier convive avec lequel le convive_a doit manger
- * @param[:nb_groupe] Le nombre de groupe
+ * @brief	Search the first member of a group in all groups 
+ * 			If the member is not found in the globality of cahier 
+ * 			The convive is pray to leave the restaurant.
+ * 
+ * @param[in]	[:convive_w]	{char []} 				The convive we want to join a group
+ * @param[out]	[:c] 			{struct cahier_rapel *}	The cahier
+ * @param[in]	[:convive_f] 	{char []}				The first convive
+ * @param[out]	[:nb_groupe] 	{int}					The number of group in the cahier
  *
- * @return L'indice du groupe dans lequel on a inserer ce convive
+ * @return {int}	index of group we insertion it was done or -1 if not found.
+ * 
+ * @author chriSmile0
 */
-
-int inserer_in_groupe(char convive_a[],struct cahier_rapel * c, char convive_f[], int nb_groupe);
+int insert_in_group(char convive_w[], struct cahier_rapel * c, 
+						char convive_f[], int nb_groupe);
 
 /** 
- * @brief Va afficher utiliser lire_resto et lire_cahier pour faire l'état
- *        des lieux
+ * @version 1.0
  * 
- * @param[:fd] Le descripteur de sortie pour l'affichage
-
- * @return no return 
+ * @brief 	Use print_resto and print_cahier 
+ * 
+ * @param[in]	[:fd]	{FILE *}	the file description for the output of these print.
+ *
+ * @return {void}	
+ * 
+ * @author chriSmile0
 */
-
 void affichage_police(FILE * fd); 
 
 /** 
- * @brief Suppression du restaurant
- *        
- * @return no return
+ * @version 1.0
+ * 
+ * @brief	Remove restaurant
+ * 
+ * @param[:/] {void} 
+ * 
+ * @return {void}
+ * 
+ * @author chriSmile0
 */
-
 void close_resto(void);
-
 
 
 //***************************** UPDATE 2024 **********************************//
 /** 
- * @brief 
- *
- * @param[:t] la table
+ * @version 1.0
  * 
+ * @brief	Print the table in the FILE f 
  *
- * @return 
+ * @param[in]	[:t]	{struct table *}	the table
+ * @param[in]	[:f] 	{FILE *}			the file descriptor to print the content
+ 
+ * @return {void}
+ * 
+ * @author chriSmile0
 */
-void print_table(struct table *t);
-
-
+void print_table(struct table *t, FILE *f);
 
 /** 
- * @brief 
- *
- * @param[:r] le resto
+ * @version 1.0
  * 
+ * @brief	Print the resto in the FILE f 
  *
- * @return 
+ * @param[in]	[:r]	{struct restoo *}	the resto
+ * @param[in]	[:f]	{FILE *}			the file descriptor to print the content
+ * 
+ * @return {void}
+ * 
+ * @author chriSmile0
 */
-void print_resto(struct restoo *r);
+void print_resto(struct restoo *r, FILE *f);
 
 /** 
- * @brief 
- *
- * @param[:g] le groupe
+ * @version 1.0
  * 
+ * @brief 	Print the group in the FILE f
  *
- * @return 
+ * @param[in]	[:g] {struct group *}	the group
+ * @param[in]	[:f] {FILE *}			the file descriptor to print the content
+ *
+ * @return {void}
+ * 
+ * @author chriSmile0
 */
-void print_group(struct group *g);
+void print_group(struct group *g, FILE *f);
 
 /** 
- * @brief 
- *
- * @param[:c] le cahier
+ * @version 1.0
  * 
- *
- * @return 
+ * @brief	Print the cahier in the FILE f
+ * 
+ * @param[in]	[:c] {struct cahier_rapel *} 	the cahier
+ * @param[in]	[:f] {FILE *}					the file descriptor to print the content
+ * 
+ * @return {void} 
+ * 
+ * @author chriSmile0
 */
-void print_cahier(struct cahier_rapel *c);
+void print_cahier(struct cahier_rapel *c, FILE *f);
 
 /**
- * @brief Search if a token is present on a string
- * @param[:string] the string to analyze
- * @param[:token] the token search in string
- * @return >0 or 0 
+ * @version 1.0
+ * 
+ * @brief 	Search if a token is present on a string
+ * 
+ * @param[in]	[:string]	{char *}	the string to analyze
+ * @param[in]	[:token]	{char *}	the token search in string
+ * 
+ * @return {int}	>0 or 0
+ * 
+ * @author chriSmile0 
 */
 int is_present(char * string, char *token);
 
+/**
+ * @version x.y
+ *
+ * @brief	...
+ * 
+ * @param[in]	[:p1]					{char/int/...}	Description
+ * @param[in]	[:long_parameter] 		{char/int/...}	Description
+ * @param[out]	[:modified_parameter	{char *|int *}	Description
+ * 
+ * 
+ * @return	{int/void/char}	Description
+ *
+ * @author chriSmile0
+*/
 #endif /* __SHM_H__ */
