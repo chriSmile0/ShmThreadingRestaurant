@@ -1,4 +1,4 @@
-# [Chris_C_Strandard]
+# [Chris_C_Standard]
 
 ## Indents
 ```
@@ -16,27 +16,47 @@
  *
  * @brief	...
  * 
- * @param[:p1]	{char/int/etc}	Description 
+ * @param[in]	[:p1]					{char/int/...}	Description
+ * @param[in]	[:long_parameter] 		{char/int/...}	Description
+ * @param[out]	[:modified_parameter]	{char *|int *}	Description
  *
- * @return	{int/void/char}		Description
+ * @return	{int/void/char}	Description
  *
  * @author X
 */
 ```
-### Example 
+### Examples
+#### Simple (in)
 ```
 /**
  * @version 1.0
  *
  * @brief	Print the x value in the standard output
  *
- * @param[:x]	{int}	the value to print
+ * @param[in]	[:x]	{int}	the value to print
  *
  * @return {void} print the value
  * 
  * @author chriSmile0
 */
 void print_value(int x);
+```
+
+#### Complex (in & out)
+```
+/**
+ * @version 1.0
+ *
+ * @brief	Print the x value in the standard output
+ *
+ * @param[in]	[:x]				{int}	the value to print
+ * @param[out]	[:modified_value]	{int *}	the value to modified
+ *
+ * @return {void} print the value
+ * 
+ * @author chriSmile0
+*/
+void print_value_and_change(int x, int *modified_value);
 ```
 
 ## Macros 
