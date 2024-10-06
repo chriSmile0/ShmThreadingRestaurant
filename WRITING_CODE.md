@@ -16,8 +16,8 @@
  *
  * @brief	...
  * 
- * @param[in]	[:p1]					{char/int/...}	Description
- * @param[in]	[:long_parameter] 		{char/int/...}	Description
+ * @param[in]	[:p1]			{char/int/...}	Description
+ * @param[in]	[:long_parameter] 	{char/int/...}	Description
  * @param[out]	[:modified_parameter]	{char *|int *}	Description
  *
  * @return	{int/void/char}	Description
@@ -49,7 +49,7 @@ void print_value(int x);
  *
  * @brief	Print the x value in the standard output
  *
- * @param[in]	[:x]				{int}	the value to print
+ * @param[in]	[:x]			{int}	the value to print
  * @param[out]	[:modified_value]	{int *}	the value to modified
  *
  * @return {void} print the value
@@ -88,12 +88,13 @@ void print_value_and_change(int x, int *modified_value);
 - 	not 
 	```
 	if((abcdefghijklmnopqrstuvwxyz > 100000000) &&
-		(lorem_ipsum_notare_lepsum < 100000))
+ 		(lorem_ipsum_notare_lepsum < 100000))
 		return 12;
 	```
 -	or not 
 	```
-	if((abcdefghijklmnopqrstuvwxyz > 100000000) &&   (lorem_ipsum_notare_lepsum < 100000))
+	if((abcdefghijklmnopqrstuvwxyz > 100000000) &&
+ 	(lorem_ipsum_notare_lepsum < 100000))
 		return 12;
 	```
 -	or not 
