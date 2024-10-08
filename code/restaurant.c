@@ -65,34 +65,37 @@ void * exec_table_by_thread(void * r_ta) {
 	print_table(t, stdout, 0);
 	(void) lunch_time;
 	int open = 1;
+	int open_is_programing = 0;
 	while(open) {
 		int S_resa_var = -1;
 		int sem_resa = sem_getvalue(&t->sem_resa,&S_resa_var);
 		if((!sem_resa) && (S_resa_var)) {
-			//printf("***table resa***\n");
 			int nb_convives_waited = t->nb_convive_t;
-			printf("nb _convives waited : %d\n", nb_convives_waited);
-			printf("nb_conv t : %d\n", nb_conv_t(t->convive));
-			if(nb_convives_waited == nb_conv_t(t->convive)) {
+			int nb_conv_t_var = nb_conv_t(t->convive);
+			if((nb_convives_waited == nb_conv_t_var) || (open_is_programing)) {
 				printf("***all convives are here***\n");
 				sem_post(&t->sem_service);
 				usleep(lunch_time*1000);
 				/*int S_fin_repas_convive = -1;
 				int sem_repas_convive = sem_getvalue(&t->sem_fin_repas_convive,&S_fin_repas_convive);*/
 				for(int i = 0; i < nb_convives_waited ; i++) 
-					sem_post(&t->sem_fin_repas_convive);
+					sem_post(&t->chairs[i]);
+				// SEM ON EACH SEAT
 				sem_wait(&t->sem_service);
 				reset_table(t);
+				if(open_is_programing)
+					open = !open;
 			}
-			else {
-				//printf("***waited convives***\n");
-			}
-			
 		}
 		int S_end_var = -1;
         int sem_end = sem_getvalue(&re_ta->r->sem_fin_service_resto,&S_end_var);
-		if((!sem_end) && (S_end_var == 1))
+		if((!sem_end) && (S_end_var == 1)) {
 			open = !open;
+			if(S_resa_var == 1) {
+				open_is_programing = 1;
+				open = !open;
+			}
+		}
 	}
 	pthread_exit(NULL);
 }

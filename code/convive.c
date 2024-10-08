@@ -104,6 +104,7 @@ int chercher_first_c(char convive_f[],struct restoo * r)
 	return t;
 }
 
+/*
 void advance_string(char *original_string, int pos) {
 	char *ptr = original_string;
 	ptr+=pos;
@@ -122,8 +123,8 @@ char * substr(char *string, int dept, int end) {
 	}
 	*dest = '\0';
 	return dest-(size-1);
-}
-
+}*/
+/*
 char * strchr_(char * string, char search, int advance_src) {
 	int i = 0;
 	char c;
@@ -138,7 +139,7 @@ char * strchr_(char * string, char search, int advance_src) {
 	else {
 		return string;
 	} 
-}
+}*/
 
 char * strtok_(char * string, char *token, int advance_src) {
 	int i = 0;
@@ -230,17 +231,8 @@ int main(int argc,char *argv[])
 			(void) index_g;
 			c->groupes[index].nb_membres_gr = nb_place_resa;
 			sem_post(&r->tables[placer].sem_resa);
-			/*if(nb_place_resa == 1) {
-				//sem_post(&r->tables[placer].sem_ta);
-				ready_to_lunch(&c->groupes[index],&r->tables[placer]);
-			}
-			sem_wait(&r->tables[placer].sem_fin_repas);
-			
-			for(int i = 0; i < nb_place_resa-1;i++) 
-				sem_post(&r->tables[placer].sem_fin_repas_convive);
-			
-			sem_wait(&r->tables[placer].sem_resa);*/
-			sem_wait(&r->tables[placer].sem_fin_repas_convive);
+			//sem_wait(&r->tables[placer].sem_fin_repas_convive);
+			sem_wait(&r->tables[placer].chairs[0]);
 			r->nb_tables_occuper--;
 		}
 	}
@@ -264,15 +256,18 @@ int main(int argc,char *argv[])
 			}
 			printf("Bienvenue %s , vous avez la table %d\n",argv[1],placer_invit);
 			inserer_convive_second(r,conv_invit,placer_invit);
-			int nb_membres_groupe = nb_membres_gr(c->groupes[x].membres_gr);
+			/*printf("|%s|\n",r->tables[placer_invit].convive);
 			printf("nb_membres : %d\n",nb_membres_groupe);
 			printf("before present ? : %d\n",c->groupes[x].membres_present);
 			//up_present(&c->groupes[x]);
 			printf("present ? : %d\n",c->groupes[x].membres_present);
-			printf("attendus ? : %d\n",c->groupes[x].nb_membres_gr);
+			printf("attendus ? : %d\n",c->groupes[x].nb_membres_gr);*/
 			if(c->groupes[x].g_complet) {
 				printf("go lunch \n");
-				sem_wait(&r->tables[placer_invit].sem_fin_repas_convive);
+				sem_wait(&r->tables[placer_invit].chairs[c->groupes[x].membres_present-1]);
+			}
+			else {
+				sem_wait(&r->tables[placer_invit].chairs[c->groupes[x].membres_present-1]);
 			}
 				
 		}

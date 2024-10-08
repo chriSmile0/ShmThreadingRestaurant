@@ -39,7 +39,9 @@ struct restoo * open_resto(int nb_tables, int tab_capa[])
 		sem_init(&r->tables[i].sem_service, 1, 0);
 		sem_init(&r->tables[i].sem_resa, 1, 0);
 		sem_init(&r->tables[i].sem_fin_repas, 1, 0);  
-		sem_init(&r->tables[i].sem_fin_repas_convive, 1, 0);  
+		sem_init(&r->tables[i].sem_fin_repas_convive, 1, 0);
+		for(int j = 0 ; j < tab_capa[i] ; j++)
+			sem_init(&r->tables[i].chairs[j], 1, 0);
 	}
 	return r;
 }
@@ -283,16 +285,56 @@ int nb_membres_gr(char membres[80])
 	return nb_membres; 
 }
 
+void advance_string(char *original_string, int pos) {
+	char *ptr = original_string;
+	ptr+=pos;
+	memcpy(original_string,ptr,strlen(ptr)+pos);
+}
+
+char * substr(char *string, int dept, int end) {
+	int size = end-dept+1;
+	char * dest = (char*)malloc(sizeof(char)*size);
+	int i = dept; 
+	char c;
+	while((i < end) && ((c=*(string+i)) != '\0')) {
+		*dest = c;
+		dest++;
+		i++;
+	}
+	*dest = '\0';
+	return dest-(size-1);
+}
+
+char * strchr_(char * string, char search, int advance_src) {
+	int i = 0;
+	char c;
+	while((c = *(string+i)) != '\0' && (c != search)) 
+		i++;
+	if(c == search) {
+		char * rt = substr(string,0,i);
+		if(advance_src) 
+			advance_string(string,i+1);
+		return rt;
+	}
+	else {
+		return string;
+	} 
+}
+
 int nb_conv_t(char convive[80])
 {
 	int taille_convive = strlen(convive);
 	int i = 0;
-	int j = 0;
-	int nb_convive = 0;
-	while(i < taille_convive) {
+	/*int j = 0;
+	int nb_convive = 0;*/
+	/*char * copy_f = malloc(80*sizeof(char));
+	memset(copy_f, '\0', 80);
+	strncpy(copy_f, convive, strlen(convive));
+	while(strcmp(copy_f,strchr_(copy_f,' ',1))!=0)
+		i++;*/
+	/*while(i < taille_convive) {
 		if(isalpha(convive[i]) == 1024) {
 			j = i;
-			printf("%c\n", convive[i]);
 			while((convive[j] != ' ') && (j < taille_convive)) 
 				j++;
 
@@ -300,8 +342,16 @@ int nb_conv_t(char convive[80])
 		}
 		i++;
 		i+= j;
+	}*/
+	int j = 0;
+	if(taille_convive > 0)
+		j = 1;
+	while(i < taille_convive) {
+		if(convive[i] == ' ') 
+			j++;
+		i++;
 	}
-	return nb_convive; 
+	return j;
 }
 
 

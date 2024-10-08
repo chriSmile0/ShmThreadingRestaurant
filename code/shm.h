@@ -29,8 +29,10 @@ struct table {
 	sem_t sem_fin_repas;
 	/** Fin du repas communiquer aux invités de celui qui a résa*/
 	sem_t sem_fin_repas_convive;
+	/** SEM ON EACH CHAIR */
+	sem_t chairs[6];
 	/** Liste de convive qui seront de taille capacite*/
-	char convive[80];
+	char convive[80]; 
 };
 
 struct group {
