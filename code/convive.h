@@ -90,6 +90,8 @@ int smallest_table(int nb_place, struct table tab_tables[],
 */
 int insert_convive_first(struct restoo * r, char conv[], int nb_place);
 
+void inserer_convive_second(struct restoo * r, char conv[], int index_table);
+
 /**
  * @version 1.0
  * 

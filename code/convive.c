@@ -1,10 +1,9 @@
 #include "convive.h"
 
-void copie_tab(struct table source[],struct table dest[],int same_taille)
+void copy_tab(struct table source[],struct table dest[],int same_taille)
 {
 	for(int i = 0 ; i < same_taille;i++) 
 		dest[i] = source[i];
-	
 }
 
 void up_present(struct group *g) {
@@ -77,6 +76,10 @@ int inserer_convive_first(struct restoo * r,char conv[],int nb_place)
 	
 	free(copie_f);
 	return l_b;
+}
+
+void inserer_convive_second(struct restoo * r, char conv[], int index_table) {
+	snprintf(r->tables[index_table].convive+strlen(r->tables[index_table].convive),80,"%s%s"," ",conv);
 }
 
 /**
@@ -195,14 +198,13 @@ int main(int argc,char *argv[])
 
 	long int len_1 = strlen(argv[1]);
 	long int len_2 = strlen(argv[2]);
-	if ((len_1 > 10) || (len_2 > 10) || (len_1 == 0 ) || (len_2 == 0)) 
-		raler("%s %s %s , pas plus grand que 10 caracter  es et non vide",argv[0],argv[1],argv[2]);
+	if((len_1 > 10) || (len_2 > 10) || (len_1 == 0 ) || (len_2 == 0)) 
+		raler("%s %s %s , pas plus grand que 10 caracteres et non vide",argv[0],argv[1],argv[2]);
 
-	char conv_invit[10];
 	char resa_conv[10];
 	int arg2_nombre = 0;
-	if (isdigit(argv[2][0]) == 2048) 
-		if (is_number(argv[2]))
+	if(isdigit(argv[2][0]) == 2048) 
+		if(is_number(argv[2]))
 			arg2_nombre = 1;
 
 
@@ -211,105 +213,69 @@ int main(int argc,char *argv[])
 	struct restoo * r = access_resto();
 	struct cahier_rapel * c = access_cahier();
 
-	if (arg2_nombre == 1) {
+	if(arg2_nombre == 1) {
 		int nb_place_resa = atoi(argv[2]);
-		//printf("nb_place resa : %d\n",nb_place_resa);
 		snprintf(resa_conv,len_1+1,"%s",argv[1]);
 		int placer = inserer_convive_first(r,resa_conv,nb_place_resa);
-		//printf("placer : %d\n",placer);
-		//print_resto(r);
-		if (placer == -1) {
+		if(placer == -1) {
 			printf("Desole %s pas de table disponible \n",argv[1]);
 		}
 		else {
 			printf("Bienvenue %s , vous avez la table %d\n",argv[1],placer);
 			r->nb_tables_occuper++;
 			r->tables[placer].num = placer;
-			int index = creer_groupe(c,placer);
+			int index = create_group(c,placer);
 		
-			int index_g = concat_chaine_in_membres(c,resa_conv,index);
+			int index_g = concat_str_in_membres(c,resa_conv,index);
 			(void) index_g;
-			//if(nb_place_resa == 1) {
-				//sem_post(&r->tables[placer].fin_table);
+			c->groupes[index].nb_membres_gr = nb_place_resa;
+			sem_post(&r->tables[placer].sem_resa);
+			/*if(nb_place_resa == 1) {
 				//sem_post(&r->tables[placer].sem_ta);
-				sem_post(&r->tables[placer].sem_resa);
-				c->groupes[index].nb_membres_gr = nb_place_resa;
-				if(nb_place_resa == 1) {
-					//sem_post(&r->tables[placer].sem_ta);
-					ready_to_lunch(&c->groupes[index],&r->tables[placer]);
-				}
-				/*printf("index_g : %d\n",index);
-				printf("c groupes resa : %d\n",c->groupes[index].nb_membres_gr);*/
-				
-				sem_wait(&r->tables[placer].sem_fin_repas);
-				
-				for(int i = 0; i < nb_place_resa-1;i++) 
-					sem_post(&r->tables[placer].sem_fin_repas_convive);
-				
-				//sem_post(&r->tables[placer].fin_table);
-				//printf("levé résa \n");
-				sem_wait(&r->tables[placer].sem_resa);
-				//print_table(&r->tables[placer]);
-				//r->nb_tables_occuper--;
-			//}
+				ready_to_lunch(&c->groupes[index],&r->tables[placer]);
+			}
+			sem_wait(&r->tables[placer].sem_fin_repas);
 			
-			//sem_post(&r->tables[placer].sem_time);
-		
-			//sem_post(&r->tables[placer].sem_ta);
-			//TRAITEMENT 
-
-
-			// FIN ICI 
-			//sem_wait(&r->tables[placer].sem_time);
+			for(int i = 0; i < nb_place_resa-1;i++) 
+				sem_post(&r->tables[placer].sem_fin_repas_convive);
+			
+			sem_wait(&r->tables[placer].sem_resa);*/
+			sem_wait(&r->tables[placer].sem_fin_repas_convive);
 			r->nb_tables_occuper--;
-			
 		}
 	}
 	else {
+		char conv_invit[10];
 		char resa_conv[10];
 		snprintf(conv_invit,len_1+1,"%s",argv[1]);
 		snprintf(resa_conv,strlen(argv[2])+1,"%s",argv[2]);
 		int placer_invit = chercher_first_c(resa_conv,r);
+		printf("placer invit %d\n", placer_invit);
 						
-		if (placer_invit == -1) 
+		if(placer_invit == -1) {
 			printf("Desolé %s pas de %s ici \n",argv[1],argv[2]);
+		}
 		else {
-			printf("Bienvenue %s , vous avez la table %d\n",argv[1],placer_invit);
-			int x = inserer_in_groupe(conv_invit,c,resa_conv,c->nb_groupe);
+			int x = insert_in_group(conv_invit,c,resa_conv,c->nb_groupe);
 			printf("x : %d\n",x);
 			if(x == -1) {
 				printf("Table pleine \n");
 				return 0;
 			}
+			printf("Bienvenue %s , vous avez la table %d\n",argv[1],placer_invit);
+			inserer_convive_second(r,conv_invit,placer_invit);
 			int nb_membres_groupe = nb_membres_gr(c->groupes[x].membres_gr);
 			printf("nb_membres : %d\n",nb_membres_groupe);
 			printf("before present ? : %d\n",c->groupes[x].membres_present);
-			up_present(&c->groupes[x]);
+			//up_present(&c->groupes[x]);
 			printf("present ? : %d\n",c->groupes[x].membres_present);
 			printf("attendus ? : %d\n",c->groupes[x].nb_membres_gr);
-			if(c->groupes[x].membres_present == c->groupes[x].nb_membres_gr) {
-			//if(nb_membres_groupe == c->groupes[x].nb_membres_gr) {
-				//sem_post(&r->tables[placer_invit].sem_ta);
-				ready_to_lunch(&c->groupes[x],&r->tables[placer_invit]);
-				//sem_wait(&r->tables[placer_invit].fin_table);
-				sem_wait(&r->tables[placer_invit].sem_fin_repas_convive);
-				//sem_post(&r->tables[placer_invit].fin_table);*/
-			}
-			else {
-				//c->groupes[x].membres_present++;
-				//up_present(&c->groupes[x]);
+			if(c->groupes[x].g_complet) {
+				printf("go lunch \n");
 				sem_wait(&r->tables[placer_invit].sem_fin_repas_convive);
 			}
-
-
-
-			/*sem_wait(&r->tables[placer_invit].sem_ta);
-			sem_wait(&r->tables[placer_invit].sem_time);*/
+				
 		}
 	}
-	/*char string[80] = "COUCOU JEAN ICI JOE LE TAXI";
-	//printf("%s\n",strtok_(string,"JOE",0));
-	char param[10] = "JEAN";
-	printf("%s is in %s ? -> %s\n",param,string,(is_present(string,param) ? "YES" : "NO"));*/
 	return 0;
 }

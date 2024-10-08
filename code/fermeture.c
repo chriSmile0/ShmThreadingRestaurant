@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
 	
 	struct restoo * r = access_resto();
 	printf("\n********FERMETURE**********\n");
-	print_resto(r, stdout);
+	print_resto(r, stdout, 0);
 	sem_post(&r->sem_fin_service_resto);
 	return 0;
 }

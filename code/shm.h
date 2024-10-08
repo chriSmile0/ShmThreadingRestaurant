@@ -115,18 +115,31 @@ struct restoo * open_resto(int nb_tables,int tab_capa[]);
 */
 struct restoo * access_resto(void);
 
+/** 
+ * @version 1.0
+ * 
+ * @brief	Reset the table in parameter
+ * 
+ * @param[out]	[:t]	{struct table *}	the table t to reset	
+ * 
+ * @return 	{void} 
+ * 
+ * @author chriSmile0
+*/
+void reset_table(struct table *t);
+
 /**
  * @version 1.0 
  * 
  * @brief	Creation of the sharing memory contain the restaurant
  * 
- * @param[in]	[:nb_groupes]	{int} 		Number of groups
+ * @param[:/]
  *
  * @return {struct cahier_rapel *}	the adress of the new segment project in memory
  * 
  * @author chriSmile0
 */
-struct cahier_rapel * open_cahier(int nb_groupes);
+struct cahier_rapel * open_cahier(void);
 
 /** 
  * @version 1.0
@@ -244,7 +257,7 @@ int search_first(char convive_f[], char membres[80]);
  * @author chriSmile0
 */
 
-int nb_members_gr(char membres[80]);
+int nb_membres_gr(char membres[80]);
 
 /**
  * @version 1.0
@@ -362,7 +375,7 @@ void close_resto(void);
  * 
  * @author chriSmile0
 */
-void print_table(struct table *t, FILE *f);
+void print_table(struct table *t, FILE *f, int police);
 
 /** 
  * @version 1.0
@@ -376,7 +389,7 @@ void print_table(struct table *t, FILE *f);
  * 
  * @author chriSmile0
 */
-void print_resto(struct restoo *r, FILE *f);
+void print_resto(struct restoo *r, FILE *f, int police);
 
 /** 
  * @version 1.0
@@ -390,7 +403,7 @@ void print_resto(struct restoo *r, FILE *f);
  * 
  * @author chriSmile0
 */
-void print_group(struct group *g, FILE *f);
+void print_group(struct group *g, FILE *f, int police);
 
 /** 
  * @version 1.0
@@ -404,7 +417,7 @@ void print_group(struct group *g, FILE *f);
  * 
  * @author chriSmile0
 */
-void print_cahier(struct cahier_rapel *c, FILE *f);
+void print_cahier(struct cahier_rapel *c, FILE *f, int police);
 
 /**
  * @version 1.0

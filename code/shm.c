@@ -64,8 +64,15 @@ struct restoo * access_resto()
 	return (r);
 }
 
+void reset_table(struct table *t) {
+	sem_post(&t->sem_fin_repas);
+	sem_wait(&t->sem_resa);
+	memset(t->convive,'\0',80);
+	t->nb_convive_t = 0;
+}
 
-struct cahier_rapel * open_cahier(int nb_groupes)
+
+struct cahier_rapel * open_cahier()
 {
 	struct cahier_rapel * cahier;
 	int fd;
@@ -73,19 +80,15 @@ struct cahier_rapel * open_cahier(int nb_groupes)
 	if(fd == -1) 
 		raler("fichier deja existant ou impossible a creer");
 	
-	ftruncate(fd, CAHIER_SIZE(nb_groupes));   
-	size_t size_cahier = CAHIER_SIZE(nb_groupes);
+	ftruncate(fd, CAHIER_SIZE(0));   
+	size_t size_cahier = CAHIER_SIZE(0);
 	cahier = mmap(NULL, size_cahier ,PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if(cahier == MAP_FAILED) 
 		raler("Impossible de projeter en mémoire");
 
 	close(fd);
 	cahier->taille = size_cahier;
-	cahier->nb_groupe = nb_groupes;
-
-	for(int i = 0 ; i < nb_groupes ; i++) 
-		cahier->groupes[i].num_gr = 0;  
-	
+	cahier->nb_groupe = 0;
 	return cahier;
 }
 
@@ -116,10 +119,10 @@ struct cahier_rapel * access_cahier()
 void effacer_cahier() {shm_unlink(CAHIER_NAME);}
 
 
-struct cahier_rapel *  copie_cahier(struct cahier_rapel * older) {
+struct cahier_rapel *  copy_cahier(struct cahier_rapel * older) {
 
 	int oldest_size = older->nb_groupe;
-	int new_nb_groupe = 2*oldest_size;
+	int new_nb_groupe = oldest_size+1;
 	struct cahier_rapel * new;
 
 	int fd;
@@ -215,11 +218,11 @@ int concat_str_in_membres(struct cahier_rapel * c, char conv[], int index)
 	char * copy = malloc(80*sizeof(char));
 	memset(copy, '\0', 80);
 	strncpy(copy, c->groupes[index].membres_gr, strlen(c->groupes[index].membres_gr));
-	while (copie[i] != '\0')
+	while(copy[i] != '\0')
 		i++;
-
+	printf("i : %d\n", i);
 	if(i == 0) {
-		strncpy(c->groupes[index].membres_gr, copy_f, strlen(copy));
+		strncpy(c->groupes[index].membres_gr, copy_f, strlen(copy_f));
 		c->groupes[index].membres_gr[strlen(copy_f)] = '\0';
 	}
 	else {
@@ -289,6 +292,7 @@ int nb_conv_t(char convive[80])
 	while(i < taille_convive) {
 		if(isalpha(convive[i]) == 1024) {
 			j = i;
+			printf("%c\n", convive[i]);
 			while((convive[j] != ' ') && (j < taille_convive)) 
 				j++;
 
@@ -318,7 +322,7 @@ int nb_membres_absent(char membres[80])
 				j++;
 			
 			memset(chaine, '\0', 10);
-			concat_maison(chaine,membres, i, j);
+			insert_str_homemade(chaine,membres, i, j);
 			taille_mot = strlen(chaine);
 			if(strncmp(chaine, absent, strlen(absent)) == 0)
 				nb_absent++;
@@ -337,7 +341,7 @@ int insert_in_group(char convive_w[], struct cahier_rapel * c,
 	int i = 0;
 	int present = -1;
 	while((!(present = is_present(c->groupes[i].membres_gr,convive_f))) 
-			&& (i < nb_groupe))
+		&& (i < nb_groupe))
 		i++;
 
 	printf("i : %d\n",i);
@@ -348,8 +352,11 @@ int insert_in_group(char convive_w[], struct cahier_rapel * c,
 		if(c->groupes[i].g_complet == 1)
 			return -1;
 
-	snprintf(c->groupes[i].membres_gr + strlen(c->groupes[i].membres_gr), 80, " %s", convive_a);
-	//c->groupes[i].membres_present++;
+	snprintf(c->groupes[i].membres_gr + strlen(c->groupes[i].membres_gr), 80, 
+				" %s", convive_w);
+	c->groupes[i].membres_present++;
+	if(c->groupes[i].nb_membres_gr == c->groupes[i].membres_present)
+		c->groupes[i].g_complet = 1;
 	return i;
 }
 
@@ -357,8 +364,11 @@ void affichage_police(FILE * fd)
 {
 	struct restoo * r = access_resto();
 	struct cahier_rapel * c = access_cahier();
-	print_resto(r, fd);
-	print_cahier(c, fd);
+	(void) fd;
+	//printf("\n***POLICE***\n");
+
+	print_resto(r, fd, 1);
+	print_cahier(c, fd, 1);
 }
 
 
@@ -373,8 +383,12 @@ void close_cahier()
 }
 
 //***************************** UPDATE 2024 **********************************//
-void print_table(struct table *t, FILE *f) {
-	fprintf(f, "\n********** TABLE n°%d **********\n", t->num);
+void print_table(struct table *t, FILE *f, int police) {
+	if(police) 
+		fprintf(f, "\nTable %d %s" , t->num, (!t->nb_convive_t) ? "(vide)" : "");
+	else 
+		fprintf(f, "\n********** TABLE n°%d**********\n", t->num);
+	
 	fprintf(f, "Capacite de la table : %d\n", t->capacite);
 	fprintf(f, "Convives prévus pour la table : %d\n", t->nb_convive_t);
 	int service;
@@ -390,7 +404,7 @@ void print_table(struct table *t, FILE *f) {
 }
 
 
-void print_resto(struct restoo *r, FILE *f) {
+void print_resto(struct restoo *r, FILE *f, int police) {
 	fprintf(f, "\n********** RESTO **********\n");
 	fprintf(f, "Taille segment resto : %ld\n", r->taille);
 	fprintf(f, "Nombre de tables occupées : %d\n", r->nb_tables_occuper);
@@ -403,25 +417,31 @@ void print_resto(struct restoo *r, FILE *f) {
 	sem_getvalue(&r->sem_fin_resto, &sfin_resto);
 	fprintf(f, "%s\n", (sfin_resto) ? "Fin du restaurant" : "Resto Pas fini");
 	for(int i = 0 ; i < nb_table ; i++)
-		print_table(&r->tables[i], f);
+		print_table(&r->tables[i], f, police);
 
 }
 
-void print_group(struct group *g, FILE *f) {
-	fprintf(f, "\n********** GROUPE n°%d **********\n", g->num_gr);
+void print_group(struct group *g, FILE *f, int police) {
+	if(police) {
+		fprintf(f, "\n********** Groupe %d %s**********\n", g->num_gr, g->membres_gr);
+	}
+	else {
+		fprintf(f, "\n********** GROUPE n°%d **********\n", g->num_gr);
+		fprintf(f, "Membres du groupe : %s\n", g->membres_gr);
+	}
 	fprintf(f, "Nombre de membres du groupe : %d\n", g->nb_membres_gr);
 	fprintf(f, "Nombre de membres du groupe présent : %d\n", g->membres_present);
-	fprintf(f, "Membres du groupe : %s\n", g->membres_gr);
 	fprintf(f, "Numéro de la table du diner : %d\n", g->num_table);
 }
 
-void print_cahier(struct cahier_rapel *c, FILE *f) {
+void print_cahier(struct cahier_rapel *c, FILE *f, int police) {
+	(void) police;
 	fprintf(f, "\n********** CAHIER **********\n");
 	fprintf(f, "Taille segment cahier : %ld\n", c->taille);
 	int nb_groupe = c->nb_groupe;
 	fprintf(f, "Nombre de groupe dans le cahier : %d\n", nb_groupe);
 	for(int i = 0 ; i < nb_groupe ; i++) 
-		print_group(&c->groupes[i], f);
+		print_group(&c->groupes[i], f, police);
 
 }
 
@@ -447,8 +467,7 @@ int is_present(char * string, char *token) {
 				h++;
 			}
 			if(k==j) 
-				cpt++;
-				
+				cpt++;		
 		}
 		i++;
 	}

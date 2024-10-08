@@ -27,7 +27,7 @@ do { \
 
 #define raler(message, ...) \
 do { \
-	fprintf(stderr, "usage:" message "\n", ##__VA_ARGS__); \
+	fprintf(stderr, "usage: " message "\n", ##__VA_ARGS__); \
 	exit(EXIT_FAILURE);\
 } while (0)
 // DO WHILE HACK
