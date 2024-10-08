@@ -7,8 +7,8 @@
 
 . ./ftest.sh
 
-REPAS=4000                               # durée d'un repas, en ms
-INTERVALLE=500
+REPAS=400                               # durée d'un repas, en ms
+INTERVALLE=50
 
 init_chrono
 

@@ -74,14 +74,14 @@ void * exec_table_by_thread(void * r_ta) {
 			int nb_conv_t_var = nb_conv_t(t->convive);
 			if((nb_convives_waited == nb_conv_t_var) || (open_is_programing)) {
 				printf("***all convives are here***\n");
-				sem_post(&t->sem_service);
+				//sem_post(&t->sem_service);
 				usleep(lunch_time*1000);
 				/*int S_fin_repas_convive = -1;
 				int sem_repas_convive = sem_getvalue(&t->sem_fin_repas_convive,&S_fin_repas_convive);*/
 				for(int i = 0; i < nb_convives_waited ; i++) 
 					sem_post(&t->chairs[i]);
 				// SEM ON EACH SEAT
-				sem_wait(&t->sem_service);
+				//sem_wait(&t->sem_service);
 				reset_table(t);
 				if(open_is_programing)
 					open = !open;
