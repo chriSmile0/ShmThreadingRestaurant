@@ -33,8 +33,8 @@ tournant autour du restaurant.
 - [x] [160](code/test-160.sh)
 - [x] [170](code/test-170.sh)
 - [x] [180](code/test-180.sh)
-- [ ] [190](code/test-190.sh)
-- [ ] [200](code/test-200.sh)
-- [ ] [210](code/test-210.sh)
+- [x] [190](code/test-190.sh)
+- [x] [200](code/test-200.sh)
+- [x] [210](code/test-210.sh)
 - [ ] [220](code/test-220.sh)
 
