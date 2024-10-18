@@ -1,4 +1,5 @@
 #include "check.h"
+#include "values.h"
 #ifndef SHM_H
 #define SHM_H
 
@@ -30,25 +31,25 @@ struct table {
 	/** Fin du repas communiquer aux invités de celui qui a résa*/
 	sem_t sem_fin_repas_convive;
 	/** SEM ON EACH CHAIR */
-	sem_t chairs[6];
+	sem_t chairs[MAX_NB_CHAIRS];
 	/** Liste de convive qui seront de taille capacite*/
-	char convive[80]; 
+	char convives[MAX_NB_CHAIRS][MAXLEN_NAME+1];
 };
 
 struct group {
 	//Num du groupe
 	int num_gr;
 	//Nombre de membres//
-	int nb_membres_gr;
+	int nb_members_gr;
 	//Numéro de la table
 	int num_table;
 	//Groupe au complet ?
-	int g_complet;
+	int g_full;
 	//Present dans le groupe 
-	int membres_present;
+	int members_present;
 	//Protection of up membres_present 
 	sem_t sem_protect_mempre;
-	char membres_gr[80];//Max 6 noms par groupes séparer par un espace
+	char members_gr[MAX_NB_CHAIRS*MAXLEN_NAME];//Max 6 noms par groupes séparer par un espace
 };
 
 /* Representation du cahier de rappel*/
@@ -56,7 +57,7 @@ struct group {
 struct cahier_rapel {
 	size_t taille;
 	int nb_groupe;
-	struct group groupes[];
+	struct group groups[];
 };
 
 
@@ -64,8 +65,8 @@ struct cahier_rapel {
 struct restoo {
 	/** Taille du segment : Utile pour munmap */
 	size_t taille;
-	/** Donne le nombre de tables occuper*/
-	int nb_tables_occuper;
+	/** Donne le nombre de tables resa*/
+	int nb_tables_resa;
 	/** Donne le nombre de tables */
 	int nb_tables;
 	/** Fin du service dans le resto */
@@ -74,11 +75,6 @@ struct restoo {
 	sem_t sem_fin_resto;
 	struct table tables [];
 };
-
-
-#define RESTO_NAME "/resto"
-#define CAHIER_NAME "/cahier"
-
 
 #define CAHIER_SIZE(nb_groupes) sizeof(struct cahier_rapel) +  nb_groupes*sizeof(struct group)
 
@@ -210,13 +206,14 @@ int empty_str(char str[10]);
  * 
  * @brief	isdigit string version
  * 
- * @param[in]	[:str]	{char []} String to analyze
+ * @param[in]	[:str]			{char []}	String to analyze
+ * @param[in]	[:raise_error] 	{int}		Boolean if we want to raise error	
  *        
- * @return {int}	1 if is ok , else exit(EXIT_FAILURE)
+ * @return {int}	1 if is ok , else exit(EXIT_FAILURE) or 0 is raise_error=0
  * 
  * @author chriSmile0
 */
-int is_number(char str[]);
+int is_number(char str[], int raise_error);
 
 /** 
  * @version 1.0
@@ -232,35 +229,6 @@ int is_number(char str[]);
 */
 int create_group(struct cahier_rapel * c, int num_table);
 
-/** 
- * @version 1.0
- * 
- * @brief	Search the name of the first member in the members of group
- * 
- * @param[in]	[:convive_f] {char []}	The convive to search
- * @param[in]	[:membres] {char [80]}	Members of the group
- *
- * @return	{int}	index of the last letter of the membres
- * 					-1 if it's not found
- * 
- * @author chriSmile0
-*/
-int search_first(char convive_f[], char membres[80]);
-
-/** 
- * @version 1.0
- * 
- * @brief 	Count the numbers of members in the string membres
- * 
- * @param[in]	[:membres] {char [80]} 	The members of the group
- *
- * @return	{int}	the number of members in the group
- * 
- * @author chriSmile0
-*/
-
-int nb_membres_gr(char membres[80]);
-
 /**
  * @version 1.0
  * 
@@ -272,7 +240,7 @@ int nb_membres_gr(char membres[80]);
  * 
  * @author chriSmile0
 */
-int nb_conv_t(char convive[80]);
+int nb_conv_t(char convives[MAX_NB_CHAIRS][MAXLEN_NAME+1]);
 
 /** 
  * @version 1.0

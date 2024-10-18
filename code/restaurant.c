@@ -16,9 +16,8 @@ int nb_groupe(struct cahier_rapel * c) {return c->nb_groupe;}
 
 int nb_convives(struct cahier_rapel * c, int nb_groupe) {
     int nombre_convive = 0;
-    for(int i = 0 ; i < nb_groupe ;i++) 
-        nombre_convive += c->groupes[i].membres_present;
-    
+    for(int i = 0 ; i < nb_groupe ; i++) 
+        nombre_convive += c->groups[i].members_present;
     return nombre_convive;
 }
 
@@ -61,7 +60,7 @@ void * exec_table_by_thread(void * r_ta) {
     int index_table = re_ta->index_table;
     int lunch_time = re_ta->lunch_time;
     struct table * t = &(re_ta->r->tables[index_table]);
-	print_table(t, stdout, 0);
+	//print_table(t, stdout, 0);
 	(void) lunch_time;
 	int open = 1;
 	int close_is_programing = 0;
@@ -70,7 +69,7 @@ void * exec_table_by_thread(void * r_ta) {
 		int sem_resa = sem_getvalue(&t->sem_resa,&S_resa_var);
 		if((!sem_resa) && (S_resa_var)) {
 			int nb_convives_waited = t->nb_convive_t;
-			int nb_conv_t_var = nb_conv_t(t->convive);
+			int nb_conv_t_var = nb_conv_t(t->convives);
 			if((nb_convives_waited == nb_conv_t_var) || (close_is_programing)) {
 				printf("***all convives are here***\n");
 				usleep(lunch_time*1000);
@@ -103,8 +102,8 @@ int main(int argc, char *argv[]) {
 		raler("%s lunch_time [table1,tables2,...]", argv[0]);
 	
 
-	is_number(argv[1]);//
-	is_number(argv[2]);//la fonction fait elle meme la sortie erreur
+	is_number(argv[1], 1);//
+	is_number(argv[2], 1);//la fonction fait elle meme la sortie erreur
 
 	int lunch_time = atoi(argv[1]);
 

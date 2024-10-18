@@ -4,7 +4,7 @@ int smallest_fit_table(int nb_place, struct table tab_tables[],
 								int taille_tab_t) {
 	int last_fit = -1;
 	for(int i = 0 ; i < taille_tab_t ; i++) {
-		if(tab_tables[i].convive[0] != '\0')
+		if(tab_tables[i].convives[0][0] != '\0')
 			continue; // resa
 		int capa_table = tab_tables[i].capacite;
 		if(capa_table == nb_place) 
@@ -28,15 +28,19 @@ int insert_convive_first(struct restoo * r, char conv[], int nb_place)
 	int nb_tables_max = r->nb_tables;
 	int chercher_table_libre = smallest_fit_table(nb_place, r->tables, nb_tables_max);
 	if(chercher_table_libre != -1) {
-		strcpy(r->tables[chercher_table_libre].convive, conv); 
+		strcpy(r->tables[chercher_table_libre].convives[0], conv); 
 		r->tables[chercher_table_libre].nb_convive_t = nb_place;
 	}
 	return chercher_table_libre;
 }
 
 void insert_convive_second(struct restoo * r, char conv[], int index_table) {
-	snprintf(r->tables[index_table].convive+strlen(r->tables[index_table].convive),
-				80, "%s%s", " ", conv);
+	struct table *t = &(r->tables[index_table]);
+	int i = 1;
+	while(i < MAX_NB_CHAIRS && t->convives[i][0] != '\0')
+		i++;
+	
+	snprintf(t->convives[i], MAXLEN_NAME+1, "%s", conv);
 }
 
 /**
@@ -54,61 +58,14 @@ int chercher_first_c(char convive_f[], struct restoo * r)
 {
 	int nb_t =  r->nb_tables;
 	int t = 0;
-	while((!is_present(r->tables[t].convive, convive_f)) && (t < nb_t)) 
+	while((t < nb_t) && strcmp(r->tables[t].convives[0],convive_f)!=0) 
 		t++;
 	if(t == nb_t)
 		return -1;
 	return t;
 }
 
-char * strtok_(char * string, char *token, int advance_src) {
-	int i = 0;
-	char c;
-	char first_letter_token = token[0];
-	size_t len_token = strlen(token);
-	while((c = *(string+i)) != '\0') {
-		if(c == first_letter_token) {
-			int j = i + len_token;
-			int k = i;
-			int h = 0;
-			while((k < j) && (string[k]==token[h])) {
-				k++;
-				h++;
-			}
-			if(k==j) {
-				char * rt = substr(string,0,i);
-				if(advance_src) 
-					advance_string(string,j);
-				return rt;
-			}  
-		}
-		i++;
-	}
-	return string; 
-}
-
-/**
- * @brief Cut string in tab of string
- * @param[:convive] Initialize string
- * @param[:separator] character separator
- * @return struct strings contains all strings we separate by separator but without
- *          the separator character
-*/
-struct strings line_in_strings(char string[], char separator) {
-	struct strings s;
-	int i = 0; 
-	while((i < 6)) {
-		char * rt = strchr_(string, separator, 1);
-		s.tab[i] = rt;
-		i++;
-		if(strcmp(string, rt)==0)
-			break;
-	}
-	s.nb_string = i;
-	return s;
-}
-
-int main(int argc,char *argv[]) {
+int main(int argc, char *argv[]) {
 	if(argc != 3) 
 		raler("%s Nom_du_premier_convive nb_place_resa ou Nom_convive Premier_convive", argv[0]);
 
@@ -118,56 +75,48 @@ int main(int argc,char *argv[]) {
 		raler("%s %s %s , pas plus grand que 10 caracteres et non vide",
 				argv[0], argv[1], argv[2]);
 
-	char resa_conv[10];
-	int arg2_nombre = 0;
-	if(isdigit(argv[2][0]) == 2048) 
-		if(is_number(argv[2]))
-			arg2_nombre = 1;
+	int arg2_nombre = (is_number(argv[2], 0));
 
-	
 	struct restoo * r = access_resto();
 	struct cahier_rapel * c = access_cahier();
 
-	if(arg2_nombre == 1) {
+	if(arg2_nombre) {
 		int nb_place_resa = atoi(argv[2]);
-		snprintf(resa_conv, len_1+1, "%s", argv[1]);
-		int placer = insert_convive_first(r, resa_conv, nb_place_resa);
+		int placer = insert_convive_first(r, argv[1], nb_place_resa);
 		if(placer == -1) {
 			printf("Desole %s pas de table disponible \n",argv[1]);
 		}
 		else {
 			printf("Bienvenue %s , vous avez la table %d\n", argv[1], placer);
-			r->nb_tables_occuper++;
+			r->nb_tables_resa++;
 			r->tables[placer].num = placer;
 			int index = create_group(c, placer);
-		
-			int index_g = concat_str_in_membres(c, resa_conv, index);
-			(void) index_g;
-			c->groupes[index].nb_membres_gr = nb_place_resa;
+			strcpy(c->groups[index].members_gr, argv[1]);
+			c->groups[index].nb_members_gr = nb_place_resa;
 			sem_post(&r->tables[placer].sem_resa);
 			sem_wait(&r->tables[placer].chairs[0]);
-			r->nb_tables_occuper--;
+			r->nb_tables_resa--;
 		}
 	}
 	else {
-		char conv_invit[10];
-		char resa_conv[10];
-		snprintf(conv_invit, len_1+1, "%s", argv[1]);
-		snprintf(resa_conv,strlen(argv[2])+1, "%s", argv[2]);
-		int placer_invit = chercher_first_c(resa_conv,r);
+		int placer_invit = chercher_first_c(argv[2], r);
 						
 		if(placer_invit == -1) {
 			printf("Desolé %s pas de %s ici \n", argv[1], argv[2]);
 		}
 		else {
-			int x = insert_in_group(conv_invit, c, resa_conv, c->nb_groupe);
+			//char conv_invit[10];
+			//char resa_conv[10];
+			//snprintf(conv_invit, len_1+1, "%s", argv[1]);
+			//snprintf(resa_conv,strlen(argv[2])+1, "%s", argv[2]);
+			int x = insert_in_group(argv[1], c, argv[2], c->nb_groupe);
 			if(x == -1) {
 				printf("Table pleine \n");
 				return 0;
 			}
-			printf("Bienvenue %s , vous avez la table %d\n",argv[1], placer_invit);
-			insert_convive_second(r, conv_invit, placer_invit);
-			sem_wait(&r->tables[placer_invit].chairs[c->groupes[x].membres_present-1]);	
+			printf("Bienvenue %s , vous avez la table %d \n",argv[1], placer_invit);
+			insert_convive_second(r, argv[2], placer_invit);
+			sem_wait(&r->tables[placer_invit].chairs[c->groups[x].members_present-1]);	
 		}
 	}
 	return 0;

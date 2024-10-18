@@ -69,7 +69,8 @@ struct restoo * access_resto()
 void reset_table(struct table *t) {
 	sem_post(&t->sem_fin_repas);
 	sem_wait(&t->sem_resa);
-	memset(t->convive,'\0',80);
+	for(int i = 0; i < MAX_NB_CHAIRS ; i++) 
+		memset(t->convives[i], '\0', MAXLEN_NAME+1);
 	t->nb_convive_t = 0;
 }
 
@@ -142,10 +143,10 @@ struct cahier_rapel *  copy_cahier(struct cahier_rapel * older) {
 	new->taille = size_cahier;
 	int i = 0;
 	for(i = 0 ; i < oldest_size ; i++) 
-		new->groupes[i].num_gr = older->groupes[i].num_gr; 
+		new->groups[i].num_gr = older->groups[i].num_gr; 
 		
 	for(i = oldest_size ; i < new_nb_groupe ; i++)
-		new->groupes[i].num_gr = 0; 
+		new->groups[i].num_gr = 0; 
 
 	new->nb_groupe = new_nb_groupe;
 
@@ -165,7 +166,7 @@ int empty_str(char str[10])
 	return i;
 }
 
-int is_number(char str[])
+int is_number(char str[], int raise_error)
 {
 	int i = 0;
 	int size_str = strlen(str);
@@ -174,15 +175,16 @@ int is_number(char str[])
 
 	if(i == size_str) 
 		return 1;
-
-	raler("usage: %s ne contient pas que des chiffres", str);
+	if(raise_error)
+		raler("usage: %s ne contient pas que des chiffres", str);
+	return 0;
 }
 
 int create_group(struct cahier_rapel * c, int num_table)
 {
 	int nb_g = c->nb_groupe;
 	int i = 0;
-	while((c->groupes[i].num_gr != 0) && (i < nb_g)) 
+	while((c->groups[i].num_gr != 0) && (i < nb_g)) 
 		i++;
 
 	if(i == nb_g) {
@@ -192,11 +194,11 @@ int create_group(struct cahier_rapel * c, int num_table)
 		new_cahier  = copy_cahier(older_cahier);
 		c = new_cahier;
 	}
-	c->groupes[i].num_gr = i+1;
-	c->groupes[i].num_table = num_table;
-	c->groupes[i].g_complet = 0;
-	c->groupes[i].membres_present = 1;
-	sem_init(&c->groupes[i].sem_protect_mempre, 1, 1);
+	c->groups[i].num_gr = i+1;
+	c->groups[i].num_table = num_table;
+	c->groups[i].g_full = 0;
+	c->groups[i].members_present = 1;
+	sem_init(&c->groups[i].sem_protect_mempre, 1, 1);
 	return i;
 }
 
@@ -209,80 +211,6 @@ void insert_str_homemade(char dest[], char source[], int begin, int end)
 		i++;
 		j++;
 	}
-}
-
-int concat_str_in_membres(struct cahier_rapel * c, char conv[], int index)
-{
-	int i = 0;
-	char * copy_f = malloc(100*sizeof(char));
-	memset(copy_f, '\0', 100);
-	strncpy(copy_f, conv, strlen(conv));
-	char * copy = malloc(80*sizeof(char));
-	memset(copy, '\0', 80);
-	strncpy(copy, c->groupes[index].membres_gr, strlen(c->groupes[index].membres_gr));
-	while(copy[i] != '\0')
-		i++;
-	printf("i : %d\n", i);
-	if(i == 0) {
-		strncpy(c->groupes[index].membres_gr, copy_f, strlen(copy_f));
-		c->groupes[index].membres_gr[strlen(copy_f)] = '\0';
-	}
-	else {
-		strncat(c->groupes[index].membres_gr,conv, strlen(conv));
-		c->groupes[index].membres_gr[strlen(conv)] = '\0';
-	}
-	free(copy_f);
-	return index;
-
-}
-
-int search_first(char convive_f[], char membres[80])
-{
-	//int i = 0;
-	/*int taille_membres = strlen(membres);
-	printf("taille membres %d\n",taille_membres);
-	char chaine[10];
-	int j = 0;
-	int indice_fin_first = -1;
-	while ( i < taille_membres) {
-		if(isalpha(membres[i]) == 1024) {
-			j = i;
-			while ((membres[j] != ' ') && (j < taille_membres)) 
-				j++;
-
-			memset(chaine,'\0',10);
-			concat_maison(chaine,membres,i,j);
-			if(strncmp(chaine,convive_f,strlen(convive_f)) == 0) 
-				indice_fin_first = j;
-			
-		}
-		i+= i + j;
-	}*/
-	strcat(membres, convive_f);
-	return strlen(membres);
-}
-
-int nb_membres_gr(char membres[80])
-{
-	int taille_membres = strlen(membres);
-	int i = 0;
-	int j = 0;
-	int nb_membres = 0;
-	int taille_mot = 0;
-	while(i < taille_membres) {
-		if(isalpha(membres[i]) == 1024) {
-			j = i;
-			taille_mot = 0;
-			while((membres[j] != ' ') && (j < taille_membres)) 
-				j++;
-
-			nb_membres++;
-			taille_mot = j;
-		}
-		i++;
-		i+= taille_mot;
-	}
-	return nb_membres; 
 }
 
 void advance_string(char *original_string, int pos) {
@@ -321,76 +249,20 @@ char * strchr_(char * string, char search, int advance_src) {
 	} 
 }
 
-int nb_conv_t(char convive[80])
+int nb_conv_t(char convives[MAX_NB_CHAIRS][MAXLEN_NAME+1])
 {
-	int taille_convive = strlen(convive);
 	int i = 0;
-	/*int j = 0;
-	int nb_convive = 0;*/
-	/*char * copy_f = malloc(80*sizeof(char));
-	memset(copy_f, '\0', 80);
-	strncpy(copy_f, convive, strlen(convive));
-	while(strcmp(copy_f,strchr_(copy_f,' ',1))!=0)
-		i++;*/
-	/*while(i < taille_convive) {
-		if(isalpha(convive[i]) == 1024) {
-			j = i;
-			while((convive[j] != ' ') && (j < taille_convive)) 
-				j++;
-
-			nb_convive++;
-		}
+	while(i < MAX_NB_CHAIRS && convives[i][0] != '\0')
 		i++;
-		i+= j;
-	}*/
-	int j = 0;
-	if(taille_convive > 0)
-		j = 1;
-	while(i < taille_convive) {
-		if(convive[i] == ' ') 
-			j++;
-		i++;
-	}
-	return j;
+	return i;
 }
-
-
-int nb_membres_absent(char membres[80])
-{
-	int taille_membres = strlen(membres);
-	int i = 0;
-	int j = 0;
-	int taille_mot = 0;
-	int nb_absent = 0;
-	char chaine[10];
-	char absent[] = "absent";
-	while(i < taille_membres) {
-		if(isalpha(membres[i]) == 1024) {
-			j = i;
-			while((membres[j] != ' ') && (j < taille_membres) && 
-					(membres[j] != '\0')) 
-				j++;
-			
-			memset(chaine, '\0', 10);
-			insert_str_homemade(chaine,membres, i, j);
-			taille_mot = strlen(chaine);
-			if(strncmp(chaine, absent, strlen(absent)) == 0)
-				nb_absent++;
-
-			i+= taille_mot;
-		}
-		i++;
-	}
-	return nb_absent;
-}
-
 
 int insert_in_group(char convive_w[], struct cahier_rapel * c, 
 						char convive_f[], int nb_groupe)
 {
 	int i = 0;
 	int present = -1;
-	while((!(present = is_present(c->groupes[i].membres_gr,convive_f))) 
+	while((!(present = is_present(c->groups[i].members_gr,convive_f))) 
 		&& (i < nb_groupe))
 		i++;
 
@@ -399,14 +271,14 @@ int insert_in_group(char convive_w[], struct cahier_rapel * c,
 	if(i == nb_groupe)
 		return -1;
 	else 
-		if(c->groupes[i].g_complet == 1)
+		if(c->groups[i].g_full == 1)
 			return -1;
 
-	snprintf(c->groupes[i].membres_gr + strlen(c->groupes[i].membres_gr), 80, 
+	snprintf(c->groups[i].members_gr + strlen(c->groups[i].members_gr), 80, 
 				" %s", convive_w);
-	c->groupes[i].membres_present++;
-	if(c->groupes[i].nb_membres_gr == c->groupes[i].membres_present)
-		c->groupes[i].g_complet = 1;
+	c->groups[i].members_present++;
+	if(c->groups[i].nb_members_gr == c->groups[i].members_present)
+		c->groups[i].g_full = 1;
 	return i;
 }
 
@@ -414,23 +286,15 @@ void affichage_police(FILE * fd)
 {
 	struct restoo * r = access_resto();
 	struct cahier_rapel * c = access_cahier();
-	(void) fd;
-	//printf("\n***POLICE***\n");
-
+	printf("\n***POLICE***\n");
 	print_resto(r, fd, 1);
 	print_cahier(c, fd, 1);
 }
 
 
-void close_resto()
-{
-	shm_unlink(RESTO_NAME);
-}
+void close_resto() {shm_unlink(RESTO_NAME);}
 
-void close_cahier()
-{
-	shm_unlink(CAHIER_NAME);
-}
+void close_cahier() {shm_unlink(CAHIER_NAME);}
 
 //***************************** UPDATE 2024 **********************************//
 void print_table(struct table *t, FILE *f, int police) {
@@ -450,14 +314,16 @@ void print_table(struct table *t, FILE *f, int police) {
 	int fin_repas;
 	sem_getvalue(&t->sem_fin_repas, &fin_repas);
 	fprintf(f, "%s\n", (service==1) ? ((fin_repas) ? "Service terminé" : "Service en cours") : "");
-	fprintf(f, "Convives : %s\n", t->convive);
+	fprintf(f, "Convives :");
+	for(int i = 0 ; i < t->nb_convive_t ; i++) 
+		fprintf(f, " %s", t->convives[i]);
 }
 
 
 void print_resto(struct restoo *r, FILE *f, int police) {
 	fprintf(f, "\n********** RESTO **********\n");
 	fprintf(f, "Taille segment resto : %ld\n", r->taille);
-	fprintf(f, "Nombre de tables occupées : %d\n", r->nb_tables_occuper);
+	fprintf(f, "Nombre de tables occupées : %d\n", r->nb_tables_resa);
 	int nb_table = r->nb_tables;
 	fprintf(f, "Nombre totale de table du restaurant : %d\n", nb_table);
 	int sfin_service;
@@ -473,14 +339,14 @@ void print_resto(struct restoo *r, FILE *f, int police) {
 
 void print_group(struct group *g, FILE *f, int police) {
 	if(police) {
-		fprintf(f, "\n********** Groupe %d %s**********\n", g->num_gr, g->membres_gr);
+		fprintf(f, "\n********** Groupe %d %s**********\n", g->num_gr, g->members_gr);
 	}
 	else {
 		fprintf(f, "\n********** GROUPE n°%d **********\n", g->num_gr);
-		fprintf(f, "Membres du groupe : %s\n", g->membres_gr);
+		fprintf(f, "Membres du groupe : %s\n", g->members_gr);
 	}
-	fprintf(f, "Nombre de membres du groupe : %d\n", g->nb_membres_gr);
-	fprintf(f, "Nombre de membres du groupe présent : %d\n", g->membres_present);
+	fprintf(f, "Nombre de membres du groupe : %d\n", g->nb_members_gr);
+	fprintf(f, "Nombre de membres du groupe présent : %d\n", g->members_present);
 	fprintf(f, "Numéro de la table du diner : %d\n", g->num_table);
 }
 
@@ -491,12 +357,12 @@ void print_cahier(struct cahier_rapel *c, FILE *f, int police) {
 	int nb_groupe = c->nb_groupe;
 	fprintf(f, "Nombre de groupe dans le cahier : %d\n", nb_groupe);
 	for(int i = 0 ; i < nb_groupe ; i++) 
-		print_group(&c->groupes[i], f, police);
+		print_group(&c->groups[i], f, police);
 
 }
 
 /**
- * @brief Search ifa token is present on a string
+ * @brief Search if a token is present on a string
  * @param[:string] the string to analyze
  * @param[:token] the token search in string
  * @return >0 or 0 
@@ -517,7 +383,8 @@ int is_present(char * string, char *token) {
 				h++;
 			}
 			if(k==j) 
-				cpt++;		
+				cpt++;	
+			
 		}
 		i++;
 	}
