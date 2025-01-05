@@ -33,9 +33,9 @@ all: $(CHRONO) $(PROGS)
 # deux programmes et un fichier shm.h pour vos définitions.
 #
 
-$(PROGS): shm.o
+$(PROGS): shm.o 
 
-shm.o: shm.h
+shm.o: shm.h 
 
 coverage: clean
 	$(MAKE) COVERAGE=$(COV)
@@ -57,4 +57,4 @@ clean:
 	rm -f *.log
 	rm -f *.aux *.pdf
 	rm -f tags core moodle.tgz
-
+	$(shell ./clean.sh)

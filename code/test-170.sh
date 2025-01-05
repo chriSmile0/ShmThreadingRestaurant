@@ -25,10 +25,12 @@ msleep $MARGE
 duree_convive C M.X 0 $MARGE &
 PID_CC=$!
 
-police_puis_fermeture_restaurant
+#police_puis_fermeture_restaurant
 
 # attendre la fin du repas de A et B
 msleep $REPAS
+
+police_puis_fermeture_restaurant
 
 fin_restaurant 2 2
 

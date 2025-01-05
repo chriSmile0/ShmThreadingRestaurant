@@ -7,230 +7,161 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+#include <time.h>
 
 #include "shm.h"
+#include <bits/time.h>
 
+int nb_groupe(struct cahier_rapel * c) {return c->nb_groupe;}
 
-/**
- * @brief Cherche le nombre de groupe du cahier
- * 
- * @param[:c] le cahier
- *
- * @return Le nombre de groupe du cahier
- * 
-*/
-
-int nb_groupe(struct cahier_rapel * c)//A modifier elle n'est pas optimale
-{                               //Le cas où des tables se liberent et qu'elles sont réattribuer 
-   int nb_groupe_max = c->nb_groupe;
-   int j = 0;
-   for (int i = 0 ; i < nb_groupe_max;i++) {
-        if (c->groupes[i].num_gr != 0)
-            j++;
-
-   }
-   return j;  
-}
-
-/**
- * @brief Cherche le nombre de convive au total
- *        Si un convive est absent on ne le contera pas
- *        
- * 
- * @param[:c] le cahier
- * @param[:nb_groupe] Le nombre de groupe
- *
- * @return Le nombre de convives au total
- * 
-*/
-
-int nb_convives(struct cahier_rapel * c,int nb_groupe)
-{
+int nb_convives(struct cahier_rapel * c, int nb_groupe) {
     int nombre_convive = 0;
-    for (int i = 0 ; i < nb_groupe ;i++) {
-        int nb_membres_groupe = nb_membres_gr(c->groupes[i].membres_gr);
-        int nombre_absent = nb_membres_absent(c->groupes[i].membres_gr);
-        nombre_convive += (nb_membres_groupe - nombre_absent);
-    }
+    for(int i = 0 ; i < nb_groupe ; i++) 
+        nombre_convive += c->groups[i].members_present;
     return nombre_convive;
 }
 
+/* ****************************** Thread Begin ****************************** */
+void set_table_enservice(struct table *t) {sem_post(&t->sem_service);}
 
-int nb_convives_installer(struct table t)
-{
-    int nb_conv = nb_conv_t(t.convive);
-    return nb_conv > 0 ? nb_conv : -1 ;
+void set_table_resa(struct table *t) {sem_post(&t->sem_resa);}
+
+int table_enservice(struct table *t) {
+	int val = -1;
+	sem_getvalue(&t->sem_service, &val);
+	return val;
 }
 
-
-/* *************Debut thread ****************** */
-
-
-int table_occuper(struct table *t)
-{  
-    int i = 0;
-    if ((nb_convives_installer(*t)) == t->nb_convive_t)
-        i++;
-    
-    return i;
+int table_resa(struct table *t) {
+	int val = -1;
+	sem_getvalue(&t->sem_resa, &val);
+	return val;
 }
 
 struct r_tab {
-    struct restoo * r;
-    int index_table;
-    int time_open;
+	struct restoo * r;
+	int index_table;
+	int lunch_time;
 };
 
-
-
 /**
- * @brief Fonction utiliser pour qu'une table tourne séparément des autres
- *        tables.
- *        Cette fonction attend donc la fermeture indéfiniment 
- *        Si par chance un client passe la porte alors il va s'installer
- *        Puis une fois installer on le laisse manger pendant un certain temps.
- *        Puis on lui dit de partir , car son repas est terminé
- *        
+ * @version 1.0
  * 
- * @param[:void] On mettra en entrer un r_tab
+ * @brief       
+ * 
+ * @param[out]	[:r_ta] {void *}	the restaurant or a table
  *
- * @return no return 
+ * @return {void *} 
  * 
+ * @author chriSmile0
 */
-
-
-void *exec_table_by_thread(void * r_ta)
-{
-    struct r_tab * re_ta = r_ta;
+void * exec_table_by_thread(void * r_ta) {
+	struct r_tab * re_ta = r_ta;
     int index_table = re_ta->index_table;
-    int time_open = re_ta->time_open;
+    int lunch_time = re_ta->lunch_time;
     struct table * t = &(re_ta->r->tables[index_table]);
-    struct timespec clock;
-    int t_s = -1;
-    int occuper = -1;
-    int v = -1;
-    int close = -1;
-    while (((sem_getvalue(&t->fin_table,&t_s) == 0) && (t_s != 1)) 
-        && (close != 1)) {
+	//print_table(t, stdout, 0);
+	(void) lunch_time;
+	int open = 1;
+	int close_is_programing = 0;
+	while(open) {
+		int S_resa_var = -1;
+		int sem_resa = sem_getvalue(&t->sem_resa,&S_resa_var);
+		if((!sem_resa) && (S_resa_var)) {
+			int nb_convives_waited = t->nb_convive_t;
+			int nb_conv_t_var = nb_conv_t(t->convives);
+			if((nb_convives_waited == nb_conv_t_var) || (close_is_programing)) {
+				printf("***all convives are here***\n");
+				usleep(lunch_time*1000);
+				for(int i = 0; i < nb_convives_waited ; i++) 
+					sem_post(&t->chairs[i]);
 
-        clock_gettime(CLOCK_REALTIME,&clock);
-        if (time_open >= 1000) {
-            clock.tv_sec+= time_open/1000;
-            clock.tv_nsec+= (time_open % 1000)*1000000;
-        }
-        else {
-            clock.tv_nsec+= (time_open * 1000000);
-        }
-       
-        sem_timedwait(&t->fin_table,&clock);
-
-        if (occuper > 0) {
-            sem_getvalue(&t->sem_ta,&v);
-            memset(t->convive,'\0',80);
-            sem_post(&t->sem_ta);
-            sem_getvalue(&t->sem_ta,&v);
-        }
-
-        int S_fin_var = -1;
-        int sem_fin = sem_getvalue(&re_ta->r->S_fin,&S_fin_var);
-        int fermeture = -1;
-        if ((sem_fin == 0) && (S_fin_var == 1))
-          
-            fermeture = 1;
-        
-        occuper =  table_occuper(t);
-    
-        int conv_in_t = -1;
-        sem_getvalue(&t->sem_time,&conv_in_t);
-        if (((occuper == 0) && (conv_in_t == 0)) && (fermeture == 1)) 
-            close = 1;
-        
-    }
-    pthread_exit(NULL);
+				reset_table(t);
+				if(close_is_programing)
+					open = !open;
+			}
+		}
+		int S_end_var = -1;
+        int sem_end = sem_getvalue(&re_ta->r->sem_fin_service_resto,&S_end_var);
+		if((!sem_end) && (S_end_var == 1)) {
+			open = !open;
+			if(S_resa_var == 1) {
+				close_is_programing = 1;
+				open = !open;
+			}
+		}
+	}
+	pthread_exit(NULL);
 }
 
-/* *************Fin thread ******************* */
+/* ****************************** Thread End ******************************** */
 
 
-int main(int argc,char *argv[])
-{
-    //Args//
-    if (argc < 3) {
-        fprintf(stderr,"usage: %s temps_d'ouverture liste_de_tables \n",argv[0]);
-        exit(EXIT_FAILURE);
-    }
+int main(int argc, char *argv[]) {
+	if(argc < 3) 
+		raler("%s lunch_time [table1,tables2,...]", argv[0]);
+	
 
-    is_number(argv[1]);//
-    is_number(argv[2]);//la fonction fait elle meme la sortie erreur
+	is_number(argv[1], 1);//
+	is_number(argv[2], 1);//la fonction fait elle meme la sortie erreur
 
-    int time_open = atoi(argv[1]);
+	int lunch_time = atoi(argv[1]);
 
-    int min_s = 1;
-    int max_s = 21600000;
+	int min_s = 1;
+	int max_s = 21600000;
 
-    int nombr_table = 0;
-    int capacite_totale_resto = 0;
-    int l_tables[argc-2];
-  
-    int t = 2;
-    int c_p = 0;
-    while ((( t < argc ) && (((c_p = atoi(argv[t])) < 7)  
-        && ((c_p = atoi(argv[t])) > 0)))) {
-        capacite_totale_resto+=c_p;
-        l_tables[t-2] = c_p;
-        t++; 
-    }
-    if (t != (argc)) {
-        fprintf(stderr,
-        "usage: Un des arguments est plus grand que la capacite max ou plus petit que 1\n");
-        exit(EXIT_FAILURE);
-    }
-    nombr_table = t-2;
+	int nombr_table = 0;
+	int capacite_totale_resto = 0;
+	int l_tables[argc-2];
 
-    if (t != (argc)) {
-        fprintf(stderr,
-        "usage: Un des arguments est plus grand que la capacite max ou plus petit que 1\n");
-        exit(EXIT_FAILURE);
-    }
+	int t = 2;
+	int c_p = 0;
+	while((t < argc) && (((c_p = atoi(argv[t])) < 7)  
+		&& (c_p = atoi(argv[t])))) {
+		capacite_totale_resto += c_p;
+		l_tables[t-2] = c_p;
+		t++; 
+	}
+	
+	if(t != (argc)) 
+		raler("Un des arguments est plus grand que la capacite max ou plus petit que 1");
 
-    if ((time_open < min_s) || (time_open > max_s)) {
-        fprintf(stderr,"usage: Temps d'ouverture trop petit/grand \n");
-        exit(EXIT_FAILURE);
-    }
+	nombr_table = t-2;
 
-    struct restoo * r =  open_resto(nombr_table,l_tables);
-    struct cahier_rapel * c = open_cahier(nombr_table);
+	if(t != (argc))
+		raler("Un des arguments est plus grand que la capacite max ou plus petit que 1");
 
-    struct r_tab *tab_rtab;
-    tab_rtab = calloc(nombr_table , sizeof(struct r_tab));
-   
-    pthread_t *tid;
-    tid = calloc(nombr_table ,sizeof(pthread_t));
-    for (int i = 0 ; i < nombr_table;i++) {
-        tab_rtab[i].r = r;
-        int c = i;
-        tab_rtab[i].index_table = c;
-        tab_rtab[i].time_open = time_open;
-        if ((errno = pthread_create(&tid[i],NULL,exec_table_by_thread,&tab_rtab[i])) > 0) {
-            fprintf(stderr,"thread create\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-    for (int i = 0 ; i < nombr_table;i++) {
-        if (errno = pthread_join(tid[i],NULL) > 0) {
-            fprintf(stderr,"thread join\n");
-            exit(EXIT_FAILURE);
-        }
-    }
+	if((lunch_time < min_s) || (lunch_time > max_s)) 
+		raler("Temps du repas trop petit/grand");
+	
+	struct restoo * r =  open_resto(nombr_table, l_tables);
+	struct cahier_rapel * c = open_cahier();
 
-    int nb_c = nb_convives(c,c->nb_groupe);
-    int nb_g = nb_groupe(c);
-    if (nb_c == 0)
-        nb_g = 0;
-    close_resto();
-    close_cahier();
-    printf("%d convives servis dans %d groupes\n",nb_c,nb_g);
-    free(tid);
-    free(tab_rtab);
-    return 0;
+	struct r_tab *tab_rtab;
+	tab_rtab = calloc(nombr_table, sizeof(struct r_tab));
+	pthread_t *tid;
+	tid = calloc(nombr_table, sizeof(pthread_t));
+	for(int i = 0 ; i < nombr_table ; i++) {
+		tab_rtab[i].r = r;
+		int c = i;
+		tab_rtab[i].index_table = c;
+		tab_rtab[i].lunch_time = lunch_time;
+		if(errno = pthread_create(&tid[i], NULL, exec_table_by_thread, &tab_rtab[i])) 
+			raler("thread create");
+			
+	}
+	for(int i = 0 ; i < nombr_table ; i++) 
+		if(errno = pthread_join(tid[i], NULL))
+			raler("thread join"); 
+	
+	print_resto(r, stdout, 0);
+	print_cahier(c, stdout, 0);
+	int nb_g = nb_groupe(c);
+	int nb_c = nb_convives(c, nb_g);
+	close_resto();
+	close_cahier();
+	printf("%d convives servis dans %d groupes\n", nb_c, nb_g);
+	free(tid);
+	free(tab_rtab);
+	return 0;
 }

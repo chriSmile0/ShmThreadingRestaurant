@@ -6,15 +6,13 @@
 
 #include "shm.h"
 
-int main(int argc,char *argv[])
-{
-    //ARGS
-    if (argc != 1) {//0 argument en plus du prog
-        fprintf(stderr,"usage: %s\n",argv[0]);
-        exit(EXIT_FAILURE);
-    }
-
-    struct restoo * r = access_resto();
-    sem_post(&r->S_fin);
-    return 0;
+int main(int argc, char *argv[]) {
+	if(argc != 1)
+		raler("%s", argv[0]);
+	
+	struct restoo * r = access_resto();
+	printf("\n********FERMETURE**********\n");
+	print_resto(r, stdout, 0);
+	sem_post(&r->sem_fin_service_resto);
+	return 0;
 }
